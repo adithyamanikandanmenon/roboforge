@@ -23,6 +23,7 @@ import {
   reportText,
 } from "./farmInsights.js";
 import { FarmClient } from "./farmClient.js";
+import { actionAlerts } from "./actionPolicy.js";
 import {
   waterBodyTypes,
   recordSensorEvent,
@@ -70,6 +71,7 @@ export function useFarmWorkspace(settings, mode) {
   const clientRef = useRef(null);
   const requestedId = useRef(new URLSearchParams(location.search).get("water"));
   const configKey = JSON.stringify(settings.firebase);
+  const publicProfileKey = `roboforge-public-profiles-${settings.firebase?.projectId || "none"}`;
   useEffect(() => {
     setDemoOwner(false);
     setPushOn(false);
@@ -94,6 +96,13 @@ export function useFarmWorkspace(settings, mode) {
         targets: settings.targets || defaultTargets,
       },
     ]);
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem(publicProfileKey) || "null",
+      );
+      if (Array.isArray(saved) && saved.length)
+        setProfiles(saved.map(validateProfile));
+    } catch {}
     let disposed = false,
       offProfiles;
     const client = new FarmClient();
@@ -119,7 +128,12 @@ export function useFarmWorkspace(settings, mode) {
                   return [];
                 }
               });
-              if (valid.length) setProfiles(valid);
+              if (valid.length) {
+                setProfiles(valid);
+                try {
+                  localStorage.setItem(publicProfileKey, JSON.stringify(valid));
+                } catch {}
+              }
             } else
               setProfiles([
                 {
@@ -573,7 +587,7 @@ export function FarmTools({
   onConnect,
   onOwner,
 }) {
-  const alerts = buildAlerts(rows, targets, {
+  const alerts = actionAlerts({ ...farm.profile, targets }, rows, {
     now,
     staleMinutes: farm.profile.staleMinutes,
     connected: mode === "demo" || connection === "connected",
@@ -621,8 +635,10 @@ export function FarmTools({
           </select>
         </div>
         <p className="farm-note">
-          Based on selected targets and available records. Acknowledging means
-          “seen”; it does not resolve the condition.
+          Repeated episodes are grouped by measurement. Missing readings and
+          connection problems share one data-update group. Care reminders stay
+          on their own page. Based on selected targets and available records.
+          Acknowledging means “seen”; it does not resolve the condition.
         </p>
         {!list.length && (
           <div className="farm-empty">
@@ -643,7 +659,7 @@ export function FarmTools({
             <div>
               <h3>
                 {alert.title}
-                <span>{alert.active ? "Active" : "Resolved"}</span>
+                <span>{alert.priority}</span>
               </h3>
               <p>{alert.detail}</p>
               <small>

@@ -38,7 +38,22 @@ export function normalizeSensorChecks(input = {}) {
         calibrateEveryDays: row.calibrateEveryDays ?? 90,
         jumpLimit: row.jumpLimit ?? jumpDefaults[metric.key],
         maxGapMinutes: row.maxGapMinutes ?? 30,
+        comparePair: row.comparePair ?? false,
+        pairTolerance: row.pairTolerance ?? 0.3,
+        pairMaxSkewSeconds: row.pairMaxSkewSeconds ?? 60,
       };
+      if (
+        typeof result.comparePair !== "boolean" ||
+        !Number.isFinite(result.pairTolerance) ||
+        result.pairTolerance <= 0 ||
+        result.pairTolerance > 14 ||
+        !Number.isInteger(result.pairMaxSkewSeconds) ||
+        result.pairMaxSkewSeconds < 1 ||
+        result.pairMaxSkewSeconds > 3600
+      )
+        throw new Error(
+          "Choose a positive pH comparison limit (up to 14) and a time gap of 1–3600 seconds.",
+        );
       for (const key of ["checkedAt", "calibratedAt"])
         if (
           result[key] !== null &&

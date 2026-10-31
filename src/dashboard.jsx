@@ -56,6 +56,13 @@ import {
   LargeScreen,
 } from "./waterFeatures.jsx";
 import { reminderStatus } from "./waterOperations.js";
+import { ActionCenter, ProbeComparison, GuidedSetup } from "./actionCenter.jsx";
+import { actionAlerts } from "./actionPolicy.js";
+import {
+  readSavedReadings,
+  saveReadings,
+  removeSavedReadings,
+} from "./offlineReadings.js";
 import "./farm.css";
 import "./dashboard.css";
 import "./pondTheme.css";
@@ -272,6 +279,7 @@ function Dashboard() {
         "waterbodies",
         "sensors",
         "reminders",
+        "setup",
       ].includes(new URLSearchParams(location.search).get("section"))
         ? new URLSearchParams(location.search).get("section")
         : "overview",
@@ -285,10 +293,60 @@ function Dashboard() {
     [formError, setFormError] = useState(""),
     [targets, setTargets] = useState(defaultTargets),
     [retry, setRetry] = useState(0),
+    [savedSnapshot, setSavedSnapshot] = useState(null),
+    [browserOnline, setBrowserOnline] = useState(navigator.onLine),
+    [offlineReady, setOfflineReady] = useState(false),
     [display, setDisplay] = useState(
       new URLSearchParams(location.search).get("view") === "display",
     );
   const farm = useFarmWorkspace(settings, mode);
+  useEffect(() => {
+    const online = () => {
+        setBrowserOnline(true);
+        setRetry((n) => n + 1);
+      },
+      offline = () => setBrowserOnline(false);
+    window.addEventListener("online", online);
+    window.addEventListener("offline", offline);
+    return () => {
+      window.removeEventListener("online", online);
+      window.removeEventListener("offline", offline);
+    };
+  }, []);
+  useEffect(() => {
+    if (!import.meta.env.PROD || !navigator.serviceWorker || !settings.firebase)
+      return;
+    const receive = (e) => {
+      if (e.data?.type === "PUBLIC_SHELL_CACHED")
+        setOfflineReady(e.data.ready === true);
+    };
+    navigator.serviceWorker.addEventListener("message", receive);
+    const cacheShell = () => {
+      navigator.serviceWorker.ready
+        .then((registration) => {
+          registration.active?.postMessage({ type: "CACHE_PUBLIC_SHELL" });
+        })
+        .catch(() => setOfflineReady(false));
+    };
+    navigator.serviceWorker.addEventListener("controllerchange", cacheShell);
+    const params = new URLSearchParams({
+      config: JSON.stringify(settings.firebase),
+    });
+    navigator.serviceWorker
+      .register(`/firebase-messaging-sw.js?${params}`)
+      .then(() => navigator.serviceWorker.ready)
+      .then((registration) => {
+        registration.active?.postMessage({ type: "CACHE_PUBLIC_SHELL" });
+      })
+      .catch(() => setOfflineReady(false));
+    return () => {
+      navigator.serviceWorker.removeEventListener("message", receive);
+      navigator.serviceWorker.removeEventListener(
+        "controllerchange",
+        cacheShell,
+      );
+    };
+  }, [JSON.stringify(settings.firebase)]);
   useEffect(() => {
     if (display) {
       const url = new URL(location.href);
@@ -316,7 +374,10 @@ function Dashboard() {
     setTargets(profile.targets);
     const source = `${mode}:${profile.id}:${profile.path}`;
     if (activeSource.current !== source) {
-      setRows(mode === "demo" ? makeDemo() : []);
+      if (mode === "demo") {
+        setRows(makeDemo());
+        setSavedSnapshot(null);
+      }
       activeSource.current = source;
     }
   }, [farm.profile]);
@@ -407,10 +468,16 @@ function Dashboard() {
       close;
     setConnection("connecting");
     setError("");
+    const saved = readSavedReadings(settings);
+    setSavedSnapshot(saved);
+    setRows(saved?.rows || []);
     subscribeToPond(settings, {
       onData: (data) => {
         if (!cancelled) {
-          setRows(normalizeReadings(data));
+          const normalized = normalizeReadings(data);
+          setRows(normalized);
+          saveReadings(settings, normalized);
+          setSavedSnapshot(null);
           setError("");
           setNow(Date.now());
         }
@@ -419,7 +486,14 @@ function Dashboard() {
         if (!cancelled) setConnection(value);
       },
       onError: (e) => {
-        if (!cancelled) setError(e.message);
+        if (!cancelled) {
+          setError(e.message);
+          if (/permission/i.test(e.message)) {
+            removeSavedReadings(settings);
+            setSavedSnapshot(null);
+            setRows([]);
+          }
+        }
       },
     })
       .then((stop) => {
@@ -440,7 +514,8 @@ function Dashboard() {
   const state = summary(rows, targets, now, settings.staleMinutes),
     latest = state.latest;
   const displayState =
-    mode !== "demo" && (connection === "error" || connection === "offline")
+    mode !== "demo" &&
+    (connection !== "connected" || savedSnapshot || !browserOnline)
       ? "unavailable"
       : !latest
         ? "empty"
@@ -568,7 +643,7 @@ function Dashboard() {
         targets={targets}
         now={now}
         mode={mode}
-        connection={connection}
+        connection={savedSnapshot || !browserOnline ? "offline" : connection}
         onExit={() => setDisplayMode(false)}
       />
     );
@@ -588,6 +663,7 @@ function Dashboard() {
           {[
             ["overview", "Pond overview", LayoutDashboard],
             ["waterbodies", "Water bodies", Waves],
+            ["setup", "Guided setup", Settings],
             ["history", "Water history", History],
             ["guide", "Understand the readings", BookOpen],
             ["alerts", "Pond alerts", AlertCircle],
@@ -607,7 +683,7 @@ function Dashboard() {
               {key === "alerts" && (
                 <b className="nav-alert-count">
                   {
-                    buildAlerts(rows, targets, {
+                    actionAlerts({ ...farm.profile, targets }, rows, {
                       now,
                       staleMinutes: settings.staleMinutes,
                       connected: mode === "demo" || connection === "connected",
@@ -719,42 +795,46 @@ function Dashboard() {
                 A HEALTHIER POND STARTS WITH UNDERSTANDING
               </p>
               <h1>
-                {section === "waterbodies"
-                  ? "All your water, in one place."
-                  : section === "sensors"
-                    ? "Good readings start with good sensors."
-                    : section === "reminders"
-                      ? "A little care, at the right time."
-                      : section === "history"
-                        ? "Your water, over time."
-                        : section === "guide"
-                          ? "Good information. Simply explained."
-                          : section === "alerts"
-                            ? "Know what needs attention."
-                            : section === "activity"
-                              ? "The story around your pond."
-                              : section === "owner"
-                                ? "Your farm, your settings."
-                                : "Your pond, at a glance."}
+                {section === "setup"
+                  ? "Let’s connect your water."
+                  : section === "waterbodies"
+                    ? "All your water, in one place."
+                    : section === "sensors"
+                      ? "Good readings start with good sensors."
+                      : section === "reminders"
+                        ? "A little care, at the right time."
+                        : section === "history"
+                          ? "Your water, over time."
+                          : section === "guide"
+                            ? "Good information. Simply explained."
+                            : section === "alerts"
+                              ? "Know what needs attention."
+                              : section === "activity"
+                                ? "The story around your pond."
+                                : section === "owner"
+                                  ? "Your farm, your settings."
+                                  : "Your pond, at a glance."}
               </h1>
               <p>
-                {section === "waterbodies"
-                  ? "Add a pond, tank, lake or another water body, then switch between them."
-                  : section === "sensors"
-                    ? "See what was checked, what is due and which changes need verification."
-                    : section === "reminders"
-                      ? "Schedule everyday tasks without mixing them with water-quality alerts."
-                      : section === "history"
-                        ? "See how conditions have changed and explore earlier readings."
-                        : section === "guide"
-                          ? "You don’t need to be an expert to understand your water."
-                          : section === "alerts"
-                            ? "Clear alerts, useful context and recorded resolution."
-                            : section === "activity"
-                              ? "Keep track of feeding, water changes and everyday care."
-                              : section === "owner"
-                                ? "Manage pond profiles, access and notifications."
-                                : "The numbers that matter, explained in a way that makes sense."}
+                {section === "setup"
+                  ? "Name it, connect a device, confirm a reading, and choose suitable targets."
+                  : section === "waterbodies"
+                    ? "Add a pond, tank, lake or another water body, then switch between them."
+                    : section === "sensors"
+                      ? "See what was checked, what is due and which changes need verification."
+                      : section === "reminders"
+                        ? "Schedule everyday tasks without mixing them with water-quality alerts."
+                        : section === "history"
+                          ? "See how conditions have changed and explore earlier readings."
+                          : section === "guide"
+                            ? "You don’t need to be an expert to understand your water."
+                            : section === "alerts"
+                              ? "Clear alerts, useful context and recorded resolution."
+                              : section === "activity"
+                                ? "Keep track of feeding, water changes and everyday care."
+                                : section === "owner"
+                                  ? "Manage pond profiles, access and notifications."
+                                  : "The numbers that matter, explained in a way that makes sense."}
               </p>
             </div>
             <button className="quiet-button" onClick={openSettings}>
@@ -802,9 +882,59 @@ function Dashboard() {
               targets={targets}
               now={now}
               mode={mode}
-              connection={connection}
+              connection={
+                savedSnapshot || !browserOnline ? "offline" : connection
+              }
               settings={settings}
               onConnect={openSettings}
+              onOwner={() => navigate("owner")}
+            />
+          )}
+          {section === "setup" && (
+            <GuidedSetup
+              farm={farm}
+              settings={settings}
+              mode={mode}
+              onOwner={() => navigate("owner")}
+              onDemo={() => {
+                useDemo();
+                navigate("setup");
+              }}
+            />
+          )}
+          {mode === "live" &&
+            (!browserOnline || savedSnapshot || connection === "offline") && (
+              <div className="offline-status" role="status">
+                <Info size={20} />
+                <div>
+                  <strong>
+                    {!browserOnline || connection === "offline"
+                      ? "Offline / connection interrupted"
+                      : "Showing a saved snapshot while reconnecting"}
+                  </strong>
+                  <p>
+                    {savedSnapshot
+                      ? `Saved on this device: ${new Date(savedSnapshot.savedAt).toLocaleString()}. `
+                      : ""}
+                    Readings retain their original timestamps. Current
+                    conditions are unknown until a fresh database response
+                    arrives. Public readings refresh automatically when the
+                    connection returns; owner changes require an online
+                    connection.
+                  </p>
+                </div>
+              </div>
+            )}
+          {section === "sensors" && (
+            <ProbeComparison
+              farm={farm}
+              rows={rows}
+              now={now}
+              mode={mode}
+              connected={
+                mode === "demo" ||
+                (connection === "connected" && !savedSnapshot && browserOnline)
+              }
               onOwner={() => navigate("owner")}
             />
           )}
@@ -814,7 +944,10 @@ function Dashboard() {
               farm={farm}
               rows={rows}
               now={now}
-              connected={mode === "demo" || connection === "connected"}
+              connected={
+                mode === "demo" ||
+                (connection === "connected" && !savedSnapshot && browserOnline)
+              }
               mode={mode}
               onOwner={() => navigate("owner")}
             />
@@ -851,6 +984,14 @@ function Dashboard() {
           )}
           {section === "overview" && (
             <>
+              <ActionCenter
+                farm={farm}
+                settings={settings}
+                mode={mode}
+                now={now}
+                onNavigate={navigate}
+                onSelect={farm.setSelectedId}
+              />
               <SensorSummary
                 farm={farm}
                 rows={rows}
@@ -1357,6 +1498,11 @@ function Dashboard() {
             </>
           )}
           <footer className="pond-footer">
+            <span>
+              {offlineReady
+                ? "Offline shell enabled after this online visit"
+                : "Offline reopening needs an online visit and browser storage support"}
+            </span>
             <span>
               <Leaf size={13} /> Made for people who care for ponds.
             </span>

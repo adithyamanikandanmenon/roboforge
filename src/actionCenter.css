@@ -1,0 +1,256 @@
+.action-center {
+  padding: 24px;
+  margin-bottom: 22px;
+}
+.action-center-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 18px;
+}
+.action-center h2 {
+  font-size: 26px;
+  line-height: 1.3;
+  margin: 8px 0 12px;
+  color: #153b55;
+}
+.action-center p,
+.setup-body p,
+.probe-content p {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #405f72;
+}
+.action-context {
+  margin: 12px 0 20px;
+}
+.action-queue {
+  display: grid;
+  gap: 12px;
+}
+.action-item {
+  border: 1px solid #bfd8e3;
+  border-left: 5px solid #138577;
+  padding: 20px;
+  border-radius: 9px;
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fcfc;
+}
+.action-item.attention,
+.action-item.verify {
+  border-left-color: #b06a0e;
+  background: #fffaf0;
+}
+.action-item.unknown {
+  border-left-color: #607d96;
+  background: #f2f6fa;
+}
+.action-item h3 {
+  font-size: 19px;
+  margin: 10px 0;
+}
+.action-item strong {
+  font-size: 15px;
+}
+.action-item p {
+  margin-top: 7px;
+}
+.action-item small {
+  display: block;
+  margin-top: 10px;
+  color: #526a7b;
+}
+.action-item > div {
+  min-width: 0;
+}
+.action-item button {
+  flex-shrink: 0;
+}
+.next-check {
+  font-weight: 600;
+}
+.probe-panel {
+  margin-bottom: 22px;
+}
+.probe-content {
+  padding: 0 22px 22px;
+}
+.probe-content > p {
+  margin: 14px 0;
+}
+.probe-content > button {
+  margin: 8px 10px 8px 0;
+}
+.pair-switch {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 12px !important;
+  font-weight: 500 !important;
+}
+.pair-switch input {
+  width: 20px !important;
+  min-height: 20px !important;
+  height: 20px;
+}
+.probe-content details,
+.setup-body details {
+  padding: 16px;
+  border: 1px solid #bfd8e3;
+  background: #f2f8fc;
+  border-radius: 8px;
+  margin: 18px 0;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.probe-content summary,
+.setup-body summary {
+  cursor: pointer;
+  font-weight: 650;
+}
+.setup-steps {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  padding: 10px 22px 20px;
+  list-style: none;
+}
+.setup-steps li {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  color: #526a7b;
+  font-size: 14px;
+}
+.setup-steps li > span {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #e3edf4;
+}
+.setup-steps li[aria-current] {
+  color: #006f72;
+  font-weight: 700;
+}
+.setup-steps li[aria-current] > span {
+  color: white;
+  background: #007b78;
+}
+.setup-body {
+  padding: 0 22px 26px;
+}
+.setup-body h3 {
+  font-size: 21px;
+  margin: 14px 0;
+}
+.setup-body button {
+  min-height: 44px;
+}
+.setup-body > .green-button {
+  margin-top: 20px;
+}
+.device-destination {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 20px 0;
+  padding: 18px;
+  background: #def3ef;
+  border-radius: 8px;
+}
+.device-destination code {
+  overflow-wrap: anywhere;
+}
+.setup-body pre {
+  overflow-x: auto;
+  font-size: 12px;
+}
+.setup-body fieldset {
+  padding: 14px;
+  border: 1px solid #b7d2db;
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+}
+.setup-body legend {
+  font-size: 14px;
+  padding: 0 5px;
+}
+.setup-sample {
+  padding: 16px;
+  background: #def3ef;
+  border-radius: 8px;
+  margin: 16px 0;
+}
+.offline-status {
+  padding: 16px 20px;
+  background: #fff0ce;
+  color: #704600;
+  border: 1px solid #d2a550;
+  border-radius: 8px;
+  margin: 16px 0;
+  line-height: 1.8;
+  font-size: 14px;
+  display: flex;
+  gap: 12px;
+  align-items: start;
+}
+.offline-status svg {
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+.setup-wizard > .owner-gate {
+  margin: 0 22px 24px;
+}
+.water-status.attention,
+.water-status.verify {
+  color: #7d4900;
+  background: #ffedc7;
+}
+.water-status.good {
+  color: #11624d;
+  background: #d8f2e8;
+}
+@media (max-width: 650px) {
+  .action-center {
+    padding: 18px;
+  }
+  .action-center h2 {
+    font-size: 23px;
+  }
+  .action-center-title,
+  .action-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .action-center-title > button {
+    align-self: start;
+  }
+  .action-item button {
+    align-self: start;
+    white-space: normal;
+  }
+  .setup-steps {
+    gap: 12px;
+  }
+  .setup-steps li {
+    font-size: 12px;
+  }
+  .device-destination {
+    display: block;
+  }
+  .device-destination button {
+    margin-top: 12px;
+  }
+  .setup-body,
+  .probe-content {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}

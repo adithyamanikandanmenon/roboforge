@@ -1,5 +1,9 @@
 # Dashboard verification — 31 October 2026
 
+## Action centre follow-up
+
+Added priorities across water bodies, paired pH probe explanations, grouped alerts, four-step setup and a public offline cache. Browser-tested the empty live-data priority, owner gate, complete local example setup (including a unique destination and required target review), and the labelled probe-disagreement illustration. Automated coverage is now 39 passing tests, including cache isolation, stale and mismatched probe timestamps, alert grouping, and simulated offline navigation. Offline navigation is tested in a worker simulation; real-device offline and hardware ingestion remain unverified. See `FEATURES_ACTION_CENTER.md` for limits and data format.
+
 The navy, teal and aqua theme was checked in the in-app browser on desktop (1280 × 900) and phone (390 × 844) layouts. Colours are paired with condition words. The main text, primary buttons, navigation, badges and hero text were spot-checked for contrast; the checked foreground/background pairs exceeded 4.5:1 after darkening the hero gradient. This is a focused check, not a complete accessibility or cross-browser audit.
 
 ## Browser checks

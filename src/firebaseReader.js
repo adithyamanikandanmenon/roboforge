@@ -78,7 +78,7 @@ export async function subscribeToPond(settings, { onData, onStatus, onError }) {
     const query = dbSDK.query(
       dbSDK.ref(db, config.path),
       dbSDK.orderByChild("timestamp"),
-      dbSDK.limitToLast(500),
+      dbSDK.limitToLast(Math.max(1, Math.min(500, config.limit || 500))),
     );
     unsub = dbSDK.onValue(
       query,

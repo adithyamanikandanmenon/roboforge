@@ -52,6 +52,13 @@
             "maxGapMinutes": {
               ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 1440"
             },
+            "comparePair": { ".validate": "newData.isBoolean()" },
+            "pairTolerance": {
+              ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 14"
+            },
+            "pairMaxSkewSeconds": {
+              ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 1 && newData.val() <= 3600"
+            },
             "$other": { ".validate": false }
           }
         },

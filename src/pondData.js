@@ -121,6 +121,11 @@ export function normalizeReadings(data) {
     .map((row, index) => ({
       id: row.packet_id || row.id || String(index),
       time: timestamp(row.timestamp),
+      ph_secondary: number(row.ph_secondary),
+      ph_secondary_time:
+        row.ph_secondary_timestamp == null
+          ? timestamp(row.timestamp)
+          : timestamp(row.ph_secondary_timestamp),
       ...Object.fromEntries(metrics.map((m) => [m.key, number(row[m.key])])),
     }))
     .filter((row) => row.time !== null && row.time <= Date.now() + 300000)

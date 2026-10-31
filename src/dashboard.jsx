@@ -58,6 +58,7 @@ import {
 import { reminderStatus } from "./waterOperations.js";
 import "./farm.css";
 import "./dashboard.css";
+import "./pondTheme.css";
 const initialSettings = {
   pondName: "Pond 01",
   location: "Fish farm",
@@ -257,9 +258,9 @@ function Chart({ rows, metric, targets, activities = [] }) {
 }
 function Dashboard() {
   const [settings, setSettings] = useState(initialSettings),
-    [rows, setRows] = useState(() => makeDemo()),
-    [mode, setMode] = useState("demo"),
-    [connection, setConnection] = useState("demo"),
+    [rows, setRows] = useState([]),
+    [mode, setMode] = useState("loading"),
+    [connection, setConnection] = useState("connecting"),
     [error, setError] = useState(""),
     [section, setSection] = useState(
       [
@@ -354,7 +355,13 @@ function Dashboard() {
     mounted.current = true;
     const clock = setInterval(() => setNow(Date.now()), 30000);
     fetch("./pond-config.json")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok)
+          throw new Error(
+            "Shared data settings could not be loaded. Open Data settings to reconnect or explore the example.",
+          );
+        return r.json();
+      })
       .then((config) => {
         if (!mounted.current) return;
         setSettings((previous) => ({
@@ -375,9 +382,20 @@ function Dashboard() {
           setMode("live");
           setRows([]);
           setConnection("connecting");
+        } else {
+          setMode("demo");
+          setRows(makeDemo());
+          setConnection("demo");
         }
       })
-      .catch(() => {});
+      .catch((e) => {
+        if (mounted.current) {
+          setMode("unavailable");
+          setRows([]);
+          setConnection("error");
+          setError(e.message);
+        }
+      });
     return () => {
       mounted.current = false;
       clearInterval(clock);
@@ -422,7 +440,7 @@ function Dashboard() {
   const state = summary(rows, targets, now, settings.staleMinutes),
     latest = state.latest;
   const displayState =
-    mode === "live" && (connection === "error" || connection === "offline")
+    mode !== "demo" && (connection === "error" || connection === "offline")
       ? "unavailable"
       : !latest
         ? "empty"
@@ -810,7 +828,7 @@ function Dashboard() {
               onOwner={() => navigate("owner")}
             />
           )}
-          {mode === "live" && (error || connection === "offline") && (
+          {mode !== "demo" && (error || connection === "offline") && (
             <div className="connection-banner" role="alert">
               <AlertCircle size={18} />
               <div>
@@ -820,7 +838,15 @@ function Dashboard() {
                     "The connection was interrupted. Waiting to reconnect."}
                 </p>
               </div>
-              <button onClick={() => setRetry((n) => n + 1)}>Try again</button>
+              <button
+                onClick={() =>
+                  mode === "unavailable"
+                    ? location.reload()
+                    : setRetry((n) => n + 1)
+                }
+              >
+                Try again
+              </button>
             </div>
           )}
           {section === "overview" && (

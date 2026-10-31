@@ -57,7 +57,7 @@ function cached() {
 }
 export function useFarmWorkspace(settings, mode) {
   const [local, setLocal] = useState(cached),
-    [profiles, setProfiles] = useState(() => cached().profiles),
+    [profiles, setProfiles] = useState([initialProfile]),
     [selectedId, setSelectedId] = useState("POND_01"),
     [activities, setActivities] = useState([]),
     [reminders, setReminders] = useState([]),
@@ -73,6 +73,11 @@ export function useFarmWorkspace(settings, mode) {
   useEffect(() => {
     setDemoOwner(false);
     setPushOn(false);
+    if (mode === "loading" || mode === "unavailable") {
+      setProfiles([initialProfile]);
+      setSession({ user: null, isOwner: false });
+      return;
+    }
     if (mode === "demo") {
       setProfiles(local.profiles);
       setSession({ user: null, isOwner: false });
@@ -582,10 +587,11 @@ export function FarmTools({
   useEffect(() => setProfileDraft(null), [farm.selectedId]);
   const submitActivity = (event) => {
     event.preventDefault();
+    const when = event.currentTarget.elements.namedItem("activityTime").value;
     void farm.action(async () => {
       await farm.addActivity({
         ...activity,
-        time: activity.time ? new Date(activity.time).getTime() : Date.now(),
+        time: when ? new Date(when).getTime() : Date.now(),
       });
       setActivity({ ...activity, note: "", time: "" });
     });
@@ -715,10 +721,15 @@ export function FarmTools({
               When (leave blank for now)
               <input
                 type="datetime-local"
+                name="activityTime"
                 value={activity.time}
                 onChange={(e) =>
                   setActivity({ ...activity, time: e.target.value })
                 }
+                onInput={(e) => {
+                  const value = e.currentTarget.value;
+                  setActivity((previous) => ({ ...previous, time: value }));
+                }}
               />
             </label>
             <label className="activity-note-field">

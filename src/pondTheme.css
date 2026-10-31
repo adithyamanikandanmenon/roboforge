@@ -1,0 +1,692 @@
+/* Shared dashboard palette. Status words remain the source of meaning. */
+:root {
+  --pond-ink: #183348;
+  --pond-muted: #526a7b;
+  --pond-navy: #102b40;
+  --pond-teal: #007b78;
+  --pond-border: #cbdfe5;
+  --pond-aqua: #e3f6f3;
+  color: var(--pond-ink);
+  background: #edf5f8;
+}
+.pond-app {
+  color: var(--pond-ink);
+  background:
+    radial-gradient(ellipse at 100% 0%, #ccefeb 0, transparent 48%), #edf5f8;
+}
+.pond-sidebar {
+  background: linear-gradient(170deg, #13384b, #10283e 65%, #0b202f);
+  border-right-color: #24485a;
+  color: #effcff;
+  box-shadow: 8px 0 30px #102b4010;
+}
+.pond-brand {
+  color: #fff;
+}
+.pond-brand > span:first-child {
+  background: #1e5261;
+  color: #63e4cd;
+}
+.logo-period {
+  color: #63e4cd;
+}
+.pond-sidebar .workspace-caption {
+  color: #b2ccd4;
+}
+.pond-sidebar nav button {
+  color: #c9dce4;
+}
+.pond-sidebar nav button:not(.active):hover {
+  background: #244a5d;
+  color: #fff;
+}
+.pond-sidebar nav button.active {
+  color: #e5fff9;
+  background: #12645f;
+  box-shadow: inset 3px 0 #6de6cd;
+}
+.pond-sidebar .nav-alert-count {
+  color: #112d3c;
+  background: #bceee3;
+}
+.pond-selector {
+  border-color: #3a5665;
+}
+.pond-selector-icon,
+.small-leaf {
+  background: #244b5a;
+  color: #79e2d2;
+  border-color: #436774;
+}
+.pond-selector strong,
+.sidebar-bottom h3 {
+  color: #f5ffff;
+}
+.pond-selector small,
+.sidebar-bottom p {
+  color: #b9cfd8;
+}
+.sidebar-bottom button {
+  color: #8debd8;
+}
+.source-link {
+  color: #c9dce4;
+}
+.source-link:hover {
+  color: #fff;
+  background: #244a5d;
+}
+.pond-topbar {
+  background: #ffffffed;
+  border-bottom: 1px solid var(--pond-border);
+  color: var(--pond-muted);
+}
+.pond-topbar > div:first-child > span:first-child,
+.top-date {
+  color: var(--pond-muted);
+}
+.header-pond-select,
+.top-display-button {
+  background: #f4fbfb;
+  color: #145b65;
+  border-color: #afcfd4;
+}
+.top-display-button:hover {
+  background: #d9f4ee;
+}
+.connection-dot,
+.pond-online {
+  background: #008570;
+}
+.connection-dot.disconnected {
+  background: #af5b05;
+}
+.page-intro h1 {
+  color: #163b53;
+  font-weight: 650;
+}
+.overline {
+  color: #087b7a;
+}
+.page-intro > div > p:last-child,
+.section-title p,
+.updated-label,
+.panel-title p,
+.farm-panel .panel-title p {
+  color: var(--pond-muted);
+}
+.quiet-button {
+  color: #155d68;
+  border-color: #afcfd4;
+  background: #fff;
+}
+.quiet-button:hover {
+  background: #e0f3f1;
+  border-color: #5ba8aa;
+}
+.green-button {
+  background: #007b78;
+  color: #fff;
+  border-color: #007b78;
+}
+.green-button:hover {
+  background: #00615f;
+}
+.example-banner,
+.owner-demo-banner {
+  background: #fff3d9;
+  color: #755018;
+  border-color: #dcb875;
+}
+.example-banner button,
+.owner-demo-banner button {
+  color: #6b4308;
+}
+.connection-banner {
+  background: #fff0e8;
+  color: #8d380b;
+  border-color: #db9b77;
+}
+.farm-notice {
+  background: #def6ee;
+  color: #17594d;
+  border-color: #92cbbb;
+}
+.daily-brief,
+.plain-panel {
+  border-color: var(--pond-border);
+  box-shadow: 0 5px 20px #173b4b07;
+}
+.daily-brief {
+  background: linear-gradient(110deg, #fff, #ecf9fa);
+  border-top: 3px solid #22a5a4;
+}
+.daily-brief-heading > span {
+  color: #007b78;
+  background: #d7f1eb;
+}
+.daily-brief-heading p,
+.daily-statements span {
+  color: var(--pond-muted);
+}
+.daily-statements strong {
+  color: #174d61;
+}
+.daily-statements p {
+  border-left-color: #34aaa2;
+}
+.daily-statements p:nth-child(2) {
+  border-left-color: #6392cf;
+}
+.daily-statements p:nth-child(3) {
+  border-left-color: #dc9f3d;
+}
+.daily-statements button {
+  color: #006f72;
+}
+.sensor-summary {
+  color: #075d69;
+  background: #e0f4f6;
+  border-color: #9fced5;
+  box-shadow: 0 3px 14px #1a526508;
+}
+.sensor-summary:hover {
+  background: #d1efef;
+}
+.sensor-summary small {
+  color: #355c6c;
+}
+.pond-hero,
+.pond-hero.hero-caution {
+  color: #fff;
+  background:
+    radial-gradient(ellipse at 100% 0%, #0b6564 0, transparent 63%),
+    linear-gradient(115deg, #153b55, #0c575f);
+  border-color: #176979;
+  box-shadow: 0 10px 25px #153b551a;
+}
+.pond-hero h2 {
+  color: #fff;
+  font-weight: 600;
+}
+.pond-hero p,
+.hero-bottom,
+.pond-art > span {
+  color: #d6edef;
+}
+.hero-bottom button {
+  color: #a1f4dd;
+}
+.hero-divider {
+  border-color: #8eb8c1;
+}
+.tiny-check {
+  background: #265f67;
+  color: #b0f4de;
+}
+.status-chip {
+  color: #c1fff0;
+  background: #176761;
+  border-color: #72bcad;
+}
+.status-chip > span {
+  background: currentColor;
+}
+.hero-caution .status-chip {
+  color: #fff0cd;
+  background: #6f4d18;
+  border-color: #e3bd75;
+}
+.water-card {
+  border-color: #bfd8e5;
+  border-top: 4px solid #438dcb;
+  background: linear-gradient(#ecf5ff, #fff 50%);
+  box-shadow: 0 5px 15px #153b5508;
+}
+.water-card:nth-child(2) {
+  border-top-color: #d67a4e;
+  background: linear-gradient(#fff0e8, #fff 50%);
+}
+.water-card:nth-child(3) {
+  border-top-color: #11978b;
+  background: linear-gradient(#def7ef, #fff 50%);
+}
+.water-card:nth-child(4) {
+  border-top-color: #8a78c5;
+  background: linear-gradient(#f0ebff, #fff 50%);
+}
+.water-card:hover {
+  border-color: #168c92;
+  box-shadow: 0 7px 20px #153b5514;
+}
+.metric-icon {
+  color: #246da8;
+  background: #d8eaff;
+}
+.metric-icon.temperature {
+  color: #a24b1f;
+  background: #ffe1cd;
+}
+.metric-icon.dissolved_oxygen {
+  color: #006e61;
+  background: #c9f0e3;
+}
+.metric-icon.turbidity {
+  color: #64509b;
+  background: #e4dcff;
+}
+.water-card h3 {
+  color: #35576b;
+  font-weight: 600;
+}
+.metric-top {
+  color: #52768a;
+}
+.metric-number {
+  color: #153b55;
+  font-weight: 650;
+}
+.metric-number > span,
+.water-card > p {
+  color: var(--pond-muted);
+}
+.metric-target {
+  border-color: #d3e4eb;
+  background: #f3f8fb;
+  color: #526a7b;
+}
+.metric-target b {
+  color: #31556b;
+  font-weight: 600;
+}
+.reading-state.good {
+  color: #086851;
+}
+.reading-state.attention {
+  color: #8a4d00;
+}
+.reading-state.unknown,
+.reading-state.info {
+  color: #526675;
+}
+.chart-metric-tabs {
+  border-color: #d5e4eb;
+}
+.chart-metric-tabs button {
+  color: #526a7b;
+}
+.chart-metric-tabs button.selected {
+  color: #006f72;
+  border-color: #008e87;
+}
+.chart-metric-tabs > span,
+.chart-caption,
+.chart-caption small,
+.chart-empty {
+  color: #526a7b;
+}
+.chart-caption > span:first-child {
+  background: #007b78;
+}
+.plot text {
+  fill: #526a7b;
+}
+.panel-title select {
+  background: #f0f7fb;
+  color: #35566b;
+  border-color: #bfd8e5;
+}
+.observation-icon,
+.observation-symbol {
+  color: #007565;
+  background: #dcf4ed;
+}
+.observation-symbol.amber {
+  color: #8a4d00;
+  background: #fff0cd;
+}
+.observation h3 {
+  color: #224b61;
+}
+.observation p,
+.observation-note {
+  color: var(--pond-muted);
+}
+.observation {
+  border-color: #dbe7ee;
+}
+.environment-cards > div {
+  background: #fff;
+  border-color: #cbdfe5;
+}
+.environment-icon {
+  color: #276eae;
+  background: #e2edff;
+}
+.environment-cards > div:nth-child(2) .environment-icon {
+  color: #af501f;
+  background: #ffe7d6;
+}
+.environment-cards > div:nth-child(3) .environment-icon {
+  color: #6a54a0;
+  background: #ece5ff;
+}
+.environment-cards > div:nth-child(4) .environment-icon {
+  color: #007b78;
+  background: #d9f5ef;
+}
+.environment-cards strong {
+  color: #153b55;
+}
+.environment-cards h3,
+.environment-cards small,
+.environment-cards p {
+  color: var(--pond-muted);
+}
+.learn-strip {
+  background: #173d55;
+  color: #fff;
+  border-color: #1c5871;
+}
+.learn-icon {
+  background: #225d6d;
+  color: #a3efda;
+}
+.learn-strip h3 {
+  color: #fff;
+}
+.learn-strip p {
+  color: #cbdee7;
+}
+.learn-strip button {
+  color: #a3efda;
+}
+.pond-footer,
+.pond-footer button {
+  color: #526a7b;
+}
+.guide-intro {
+  background: #dcf2f3;
+  color: #175f6b;
+  border-color: #a4ced6;
+}
+.guide-card {
+  border-top: 3px solid #39a6a4;
+}
+.guide-card:nth-child(2n) {
+  border-top-color: #688fca;
+}
+.guide-card > svg {
+  color: #007b78;
+}
+.guide-card > span,
+.guide-card p,
+.guide-target,
+.target-settings > p {
+  color: var(--pond-muted);
+}
+.target-grid fieldset,
+.profile-targets fieldset {
+  border-color: #bad6de;
+  background: #f6fafc;
+}
+.target-grid legend,
+.target-grid label,
+.profile-targets legend,
+.profile-targets label {
+  color: #35566b;
+}
+.pond-app :is(input, select, textarea) {
+  border-color: #b7cfd9;
+  color: #24485f;
+}
+.target-grid input {
+  background: #fff;
+}
+.readings-table th {
+  color: #31556b;
+  background: #e5f0f5;
+}
+.readings-table td {
+  color: #35566b;
+  border-color: #d9e6ed;
+}
+.readings-table tbody tr:nth-child(even) {
+  background: #f5fafc;
+}
+.farm-note,
+.farm-empty p,
+.farm-actions p,
+.setup-status p,
+.owner-login p {
+  color: var(--pond-muted);
+}
+.owner-gate {
+  color: #244c62;
+  background: #edf6fa;
+  border-color: #b7d5df;
+}
+.owner-gate > svg,
+.farm-empty > svg {
+  color: #087c80;
+}
+.demo-access-note {
+  background: #fff3d9;
+  color: #755018;
+  border-color: #dcb875;
+}
+.setup-status {
+  border-color: #d3e4eb;
+}
+.setup-status > div {
+  color: #35566b;
+}
+.setup-status span {
+  background: #eef1f5;
+  color: #4d6175;
+}
+.setup-status span.ready {
+  background: #d6f0e7;
+  color: #0b6653;
+}
+.setup-guide-link {
+  color: #006f72;
+}
+.profile-list > button {
+  background: #f7fbfd;
+  border-color: #cbdfe5;
+}
+.profile-list > button.selected {
+  background: #daf2ef;
+  border-color: #5fada8;
+  box-shadow: inset 3px 0 #008e87;
+}
+.profile-list small {
+  color: #526a7b;
+}
+.water-feature-stack > .farm-panel > .water-explanation,
+.water-feature-stack > .farm-panel > .sensor-grid {
+  margin-left: 22px;
+  margin-right: 22px;
+}
+.water-feature-stack > .farm-panel > .owner-gate,
+.water-feature-stack > .farm-panel > .water-form,
+.water-feature-stack > .farm-panel > .reminder-summary,
+.water-feature-stack > .farm-panel > .reminder-filters,
+.water-feature-stack > .farm-panel > .reminder-list {
+  margin-left: 22px;
+  margin-right: 22px;
+}
+.sensor-card {
+  background: #fbfdff;
+  border-color: #bcd8e3;
+  border-top: 3px solid #27989a;
+}
+.sensor-card:nth-child(2n) {
+  border-top-color: #688fca;
+}
+.sensor-card p,
+.sensor-card dt,
+.sensor-card header > span,
+.sensor-comparison,
+.water-explanation {
+  color: var(--pond-muted);
+}
+.sensor-comparison {
+  border-color: #d1e3eb;
+}
+.water-status {
+  background: #dfeff5;
+  color: #244f65;
+}
+.water-status.current,
+.water-status.completed {
+  background: #d8f2e8;
+  color: #11624d;
+}
+.water-status.unknown,
+.water-status.unrecorded {
+  background: #e6edf5;
+  color: #415973;
+}
+.water-status.verify,
+.water-status.due {
+  background: #ffedc7;
+  color: #7d4900;
+}
+.reminder-summary {
+  background: #def3ef;
+}
+.reminder-summary strong {
+  color: #007268;
+}
+.reminder-card {
+  border-color: #bfd8e3;
+}
+.reminder-card.due {
+  border-color: #d7a350;
+  background: #fffbf2;
+}
+.reminder-card-heading,
+.reminder-card .reminder-notes {
+  color: var(--pond-muted);
+}
+.reminder-filters button {
+  border-color: #b7d2db;
+  color: #35566b;
+}
+.reminder-filters button[aria-pressed="true"] {
+  background: #0a7272;
+  color: #fff;
+  border-color: #0a7272;
+}
+.sensor-settings {
+  border-color: #cbdfe5;
+}
+.alert-row p,
+.alert-row small,
+.diary-row p,
+.diary-row small {
+  color: var(--pond-muted);
+}
+.alert-row h3 span {
+  background: #ffedc7;
+  color: #7d4900;
+}
+.alert-row.resolved h3 span {
+  background: #d8f2e8;
+  color: #11624d;
+}
+.diary-row > span {
+  background: #dcf3ee;
+  color: #007b78;
+}
+.activity-markers > span {
+  background: #fff1d6;
+  color: #805007;
+  border-color: #e1c183;
+}
+.connection-modal {
+  color: var(--pond-ink);
+}
+.modal-explainer,
+.owner-help,
+.connection-modal label {
+  color: var(--pond-muted);
+}
+.farm-display {
+  color: #12334a;
+  background: #edf6fa;
+}
+.display-header {
+  border-bottom: 3px solid #199c96;
+  padding-bottom: 24px;
+}
+.display-brand {
+  color: #006b70;
+}
+.display-header p,
+.display-footer {
+  color: #365b6f;
+}
+.display-controls button,
+.display-controls select {
+  color: #174c63;
+  border-color: #568b9d;
+}
+.display-controls button:hover {
+  background: #d8f0ed;
+}
+.display-state {
+  background: #133c54;
+  border-color: #133c54;
+  color: #fff;
+}
+.display-card {
+  background: #fff;
+  border-color: #599c9c;
+  border-top: 6px solid #118578;
+}
+.display-card > strong {
+  color: #08624d;
+}
+.display-card p {
+  color: #3a5b6e;
+}
+.display-card.attention {
+  border-color: #b0771b;
+  background: #fff5dc;
+}
+.display-card.attention > strong {
+  color: #764800;
+}
+.display-card.unknown {
+  border-color: #8199ae;
+  background: #f8fbfd;
+}
+.display-card.unknown > strong {
+  color: #3a556e;
+}
+.display-sensor-warning {
+  background: #ffedc7;
+  color: #7d4900;
+}
+:is(button, a, input, select, textarea):focus-visible {
+  outline-color: #d5671c;
+}
+@media (max-width: 600px) {
+  .water-feature-stack
+    > .farm-panel
+    > :is(
+      .water-explanation,
+      .sensor-grid,
+      .owner-gate,
+      .water-form,
+      .reminder-summary,
+      .reminder-filters,
+      .reminder-list
+    ) {
+    margin-left: 14px;
+    margin-right: 14px;
+  }
+}

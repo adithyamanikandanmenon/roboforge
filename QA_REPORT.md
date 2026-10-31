@@ -1,5 +1,9 @@
 # Dashboard verification — 31 October 2026
 
+## Integrated analytics follow-up
+
+All 41 automated tests pass, including numeric-only statistics, missing samples, adjacent-packet deltas, timestamp-preserving exports and escaped report metadata. The production build passes. Browser checks verified the empty live-data state with disabled exports, explicit example mode, 6-hour filtering to 24 records, independent measurement selection and downloading an HTML observation report. This verifies dashboard integration; no sensor ingestion or new Firebase backend was created by the analytics adaptation.
+
 ## Action centre follow-up
 
 Added priorities across water bodies, paired pH probe explanations, grouped alerts, four-step setup and a public offline cache. Browser-tested the empty live-data priority, owner gate, complete local example setup (including a unique destination and required target review), and the labelled probe-disagreement illustration. Automated coverage is now 39 passing tests, including cache isolation, stale and mismatched probe timestamps, alert grouping, and simulated offline navigation. Offline navigation is tested in a worker simulation; real-device offline and hardware ingestion remain unverified. See `FEATURES_ACTION_CENTER.md` for limits and data format.

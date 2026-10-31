@@ -1,5 +1,11 @@
 # RoboForge · Your pond, at a glance
 
+## Integrated water analytics
+
+Open **Water analytics** for paired measurement charts, per-measurement minimum/mean/maximum, adjacent-packet changes, numeric/missing counts, and sample-based within-target counts. This adapts the useful charts and reporting workflow from the supplied AquaPulse HTML into the main React dashboard. It reuses the selected water body, Firebase subscription, saved targets, original timestamps and explicit example mode. No second endpoint, polling loop or generated live baseline is added.
+
+Choose 6 hours, 24 hours or 7 days within the latest 500 fetched records. Export the selected readings as CSV or download a standalone HTML observation report, which can be printed using the browser. Reports identify example data, saved snapshots and unavailable connections. Missing measurements stay blank/unreported. The air-minus-water temperature difference requires both actual input values. Unvalidated prototype WQI, evaporation, conductivity, salinity and ammonia estimates are excluded from farm decisions. Reports are observations, not laboratory/compliance certificates.
+
 ## Farm tools added
 
 The main navigation now includes a 24-hour daily summary/report, pond selector and profiles, active/resolved alerts, a private owner diary with chart markers, and owner tools. The interface is English-only. Demo owner editing is explicitly local and persists in this browser; real owner access uses Firebase Email/Password sign-in plus a verified `farm_owner` claim enforced by the included database rules. There are no physical equipment commands.

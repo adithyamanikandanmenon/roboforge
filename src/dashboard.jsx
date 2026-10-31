@@ -66,6 +66,7 @@ import {
 import "./farm.css";
 import "./dashboard.css";
 import "./pondTheme.css";
+import Analytics from "./analytics.jsx";
 const initialSettings = {
   pondName: "Pond 01",
   location: "Fish farm",
@@ -147,6 +148,7 @@ function PondArt() {
   );
 }
 function Chart({ rows, metric, targets, activities = [] }) {
+  const fillId = React.useId();
   const points = rows.filter((r) => r[metric.key] !== null);
   if (!points.length)
     return <div className="chart-empty">No readings in this time period.</div>;
@@ -170,8 +172,17 @@ function Chart({ rows, metric, targets, activities = [] }) {
     ),
     last = Math.max(points.at(-1).time, ...eventRows.map((a) => a.time));
   const x = (time) => 45 + ((time - first) / Math.max(last - first, 1)) * 690;
-  const line = points
-    .map((r, i) => `${i ? "L" : "M"}${x(r.time)},${y(r[metric.key])}`)
+  let drawing = false;
+  const line = rows
+    .map((r) => {
+      if (!Number.isFinite(r[metric.key])) {
+        drawing = false;
+        return "";
+      }
+      const command = `${drawing ? "L" : "M"}${x(r.time)},${y(r[metric.key])}`;
+      drawing = true;
+      return command;
+    })
     .join(" ");
   return (
     <div className="plot">
@@ -181,7 +192,7 @@ function Chart({ rows, metric, targets, activities = [] }) {
         aria-label={`${metric.name} over time, from ${formatValue(vals[0], metric.precision)} to ${formatValue(vals.at(-1), metric.precision)} ${metric.unit}`}
       >
         <defs>
-          <linearGradient id="chart-fill" x1="0" x2="0" y1="0" y2="1">
+          <linearGradient id={fillId} x1="0" x2="0" y1="0" y2="1">
             <stop stopColor="#4a9d80" stopOpacity=".18" />
             <stop offset="1" stopColor="#4a9d80" stopOpacity="0" />
           </linearGradient>
@@ -214,10 +225,16 @@ function Chart({ rows, metric, targets, activities = [] }) {
             strokeDasharray="6 6"
           />
         )}
-        <path
-          d={`${line} L${x(points.at(-1).time)},185 L45,185Z`}
-          fill="url(#chart-fill)"
-        />
+        {range?.max !== null && range?.max !== undefined && (
+          <line
+            x1="45"
+            x2="735"
+            y1={y(range.max)}
+            y2={y(range.max)}
+            stroke="#d2ad6d"
+            strokeDasharray="6 6"
+          />
+        )}
         <path
           d={line}
           fill="none"
@@ -280,6 +297,7 @@ function Dashboard() {
         "sensors",
         "reminders",
         "setup",
+        "analytics",
       ].includes(new URLSearchParams(location.search).get("section"))
         ? new URLSearchParams(location.search).get("section")
         : "overview",
@@ -665,6 +683,7 @@ function Dashboard() {
             ["waterbodies", "Water bodies", Waves],
             ["setup", "Guided setup", Settings],
             ["history", "Water history", History],
+            ["analytics", "Water analytics", SlidersHorizontal],
             ["guide", "Understand the readings", BookOpen],
             ["alerts", "Pond alerts", AlertCircle],
             ["sensors", "Sensor confidence", ShieldCheck],
@@ -795,46 +814,50 @@ function Dashboard() {
                 A HEALTHIER POND STARTS WITH UNDERSTANDING
               </p>
               <h1>
-                {section === "setup"
-                  ? "Let’s connect your water."
-                  : section === "waterbodies"
-                    ? "All your water, in one place."
-                    : section === "sensors"
-                      ? "Good readings start with good sensors."
-                      : section === "reminders"
-                        ? "A little care, at the right time."
-                        : section === "history"
-                          ? "Your water, over time."
-                          : section === "guide"
-                            ? "Good information. Simply explained."
-                            : section === "alerts"
-                              ? "Know what needs attention."
-                              : section === "activity"
-                                ? "The story around your pond."
-                                : section === "owner"
-                                  ? "Your farm, your settings."
-                                  : "Your pond, at a glance."}
+                {section === "analytics"
+                  ? "Understand changes across your water."
+                  : section === "setup"
+                    ? "Let’s connect your water."
+                    : section === "waterbodies"
+                      ? "All your water, in one place."
+                      : section === "sensors"
+                        ? "Good readings start with good sensors."
+                        : section === "reminders"
+                          ? "A little care, at the right time."
+                          : section === "history"
+                            ? "Your water, over time."
+                            : section === "guide"
+                              ? "Good information. Simply explained."
+                              : section === "alerts"
+                                ? "Know what needs attention."
+                                : section === "activity"
+                                  ? "The story around your pond."
+                                  : section === "owner"
+                                    ? "Your farm, your settings."
+                                    : "Your pond, at a glance."}
               </h1>
               <p>
-                {section === "setup"
-                  ? "Name it, connect a device, confirm a reading, and choose suitable targets."
-                  : section === "waterbodies"
-                    ? "Add a pond, tank, lake or another water body, then switch between them."
-                    : section === "sensors"
-                      ? "See what was checked, what is due and which changes need verification."
-                      : section === "reminders"
-                        ? "Schedule everyday tasks without mixing them with water-quality alerts."
-                        : section === "history"
-                          ? "See how conditions have changed and explore earlier readings."
-                          : section === "guide"
-                            ? "You don’t need to be an expert to understand your water."
-                            : section === "alerts"
-                              ? "Clear alerts, useful context and recorded resolution."
-                              : section === "activity"
-                                ? "Keep track of feeding, water changes and everyday care."
-                                : section === "owner"
-                                  ? "Manage pond profiles, access and notifications."
-                                  : "The numbers that matter, explained in a way that makes sense."}
+                {section === "analytics"
+                  ? "Compare measurements, explore recorded ranges, and download an observation report."
+                  : section === "setup"
+                    ? "Name it, connect a device, confirm a reading, and choose suitable targets."
+                    : section === "waterbodies"
+                      ? "Add a pond, tank, lake or another water body, then switch between them."
+                      : section === "sensors"
+                        ? "See what was checked, what is due and which changes need verification."
+                        : section === "reminders"
+                          ? "Schedule everyday tasks without mixing them with water-quality alerts."
+                          : section === "history"
+                            ? "See how conditions have changed and explore earlier readings."
+                            : section === "guide"
+                              ? "You don’t need to be an expert to understand your water."
+                              : section === "alerts"
+                                ? "Clear alerts, useful context and recorded resolution."
+                                : section === "activity"
+                                  ? "Keep track of feeding, water changes and everyday care."
+                                  : section === "owner"
+                                    ? "Manage pond profiles, access and notifications."
+                                    : "The numbers that matter, explained in a way that makes sense."}
               </p>
             </div>
             <button className="quiet-button" onClick={openSettings}>
@@ -888,6 +911,20 @@ function Dashboard() {
               settings={settings}
               onConnect={openSettings}
               onOwner={() => navigate("owner")}
+            />
+          )}
+          {section === "analytics" && (
+            <Analytics
+              key={farm.selectedId}
+              profile={farm.profile}
+              rows={rows}
+              targets={targets}
+              mode={mode}
+              connection={connection}
+              now={now}
+              settings={settings}
+              cached={!!savedSnapshot || !browserOnline}
+              Chart={Chart}
             />
           )}
           {section === "setup" && (

@@ -1,0 +1,118 @@
+.water-analytics {
+  display: grid;
+  gap: 20px;
+}
+.water-analytics > *,
+.analytics-charts > * {
+  min-width: 0;
+}
+.water-analytics .plain-panel {
+  padding: 24px;
+}
+.water-analytics h2 {
+  font-size: 21px;
+  font-weight: 650;
+  color: #173a49;
+}
+.analytics-lead {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 20px;
+}
+.analytics-lead h2 {
+  margin: 10px 0;
+}
+.analytics-lead p {
+  line-height: 1.6;
+}
+.analytics-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.analytics-actions label,
+.analytics-picker {
+  display: grid;
+  gap: 8px;
+  font-weight: 600;
+}
+.water-analytics select {
+  max-width: 100%;
+  padding: 10px;
+  border: 1px solid #b0c9ce;
+  border-radius: 8px;
+  background: #fff;
+  color: #173a49;
+}
+.analytics-note {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #536d79;
+}
+.analytics-lead > .analytics-note {
+  flex-basis: 100%;
+  margin: 0;
+}
+.analytics-charts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.analytics-picker {
+  margin-bottom: 20px;
+}
+.analytics-table {
+  overflow-x: auto;
+}
+.analytics-table table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.analytics-table caption {
+  text-align: left;
+  padding: 10px 0;
+  font-weight: 600;
+}
+.analytics-table th,
+.analytics-table td {
+  text-align: left;
+  padding: 16px 12px;
+  border-bottom: 1px solid #d4e4e7;
+}
+.analytics-table thead {
+  background: #edf7f7;
+}
+.analytics-table small {
+  display: block;
+  margin-top: 6px;
+  color: #536d79;
+}
+.analytics-calculations {
+  line-height: 1.8;
+}
+.analytics-calculations details {
+  margin-top: 20px;
+}
+.water-analytics .panel-title h2 {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+@media (max-width: 850px) {
+  .analytics-charts {
+    grid-template-columns: 1fr;
+  }
+  .analytics-actions {
+    width: 100%;
+  }
+  .analytics-actions button {
+    flex: 1;
+  }
+  .analytics-lead {
+    padding: 20px !important;
+  }
+}

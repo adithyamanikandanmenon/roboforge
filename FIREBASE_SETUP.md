@@ -1,10 +1,10 @@
 # Connect the farm when your Firebase project is ready
 
-The published website works now with example readings and a local owner demo. No Firebase project, paid plan, account, database rules or cloud functions have been provisioned. This guide is the remaining account setup, not a claim that these services are already running.
+Firebase project `roboforge-5e54c` and its web app have been created on the Spark plan. Realtime Database is provisioned in Singapore (`asia-southeast1`), with pond-specific public reads and role-protected owner writes. The web configuration is in `public/pond-config.json`; no administrative credentials are included. No cloud functions or billing upgrade have been deployed. Sensor readings still need to be sent by your devices or your friend's system; an empty connected database should show a waiting state rather than sample measurements.
 
-## 1. Create the project and readings source
+## 1. Project configuration and readings source
 
-Create a project in [Firebase Console](https://console.firebase.google.com/), add a web app and create Realtime Database. Copy the web configuration into `public/pond-config.json` under `firebase`. Keep `databaseURL`, `apiKey`, `projectId`, `authDomain` and `appId` from your web app. Never include a service-account key, password or server credential. Web app configuration is public identification; database rules enforce access.
+The project, web app and Realtime Database have been created in [Firebase Console](https://console.firebase.google.com/project/roboforge-5e54c/overview). Their web configuration is in `public/pond-config.json`. For a different project, replace `databaseURL`, `apiKey`, `projectId`, `authDomain` and `appId` with that app's values. Never include a service-account key, password or server credential. Web app configuration is public identification; database rules enforce access. Public pond reads and blocked signed-out diary reads have been checked against the new database.
 
 Ask your friend to send timestamped water readings to the configured path, for example `water_quality/POND_01/readings/{unique_record_id}`. See README for the supported fields. Use one consistent timestamp type: ISO date/time strings or numeric epoch time. For a public dashboard, include only readings intended to be public. The single latest-record format is also supported, although it cannot provide historical charts without storing history.
 
@@ -12,7 +12,7 @@ To test in one browser first, use Data connection. To connect all visitors, upda
 
 ## 2. Enable owner sign-in and deploy rules
 
-Enable Firebase Authentication → Email/Password. Create an owner user in the Firebase Console. Add the deployed website domain to Authentication's authorized domains where needed. There is no public sign-up button and creating a Firebase account does not automatically grant owner access.
+Firebase Authentication → Email/Password is enabled. The owner user still needs to be created in the Firebase Console: enter the email and choose the password directly in Authentication → Users → Add user. Add the deployed website domain to Authentication's authorized domains where needed. There is no public sign-up button and creating a Firebase account does not automatically grant owner access.
 
 The `farm_owner: true` custom claim is required for profile/diary/acknowledgement/token writes. Use a trusted administrator's machine with Application Default Credentials and permission to administer this project:
 
@@ -24,7 +24,7 @@ node scripts/grant-owner.mjs YOUR_PROJECT_ID EXISTING_OWNER_UID
 
 This script preserves existing custom claims and grants the owner role to one existing user. It is not a browser script. Sign out and back in after granting the role. The website keeps its Firebase auth session in memory; reloading requires signing in again. Passwords are never written to application storage.
 
-Review `firebase.farm.rules.json` before deploying. It makes water readings and pond profiles public, keeps diary and acknowledgements owner-only, limits push-token access to its owner and denies client writes to server alert state. Sensor ingestion requires a trusted `sensor_writer: true` claim, a farm owner, or an Admin SDK backend. Never change all database writes to public. For an existing project, merge the rules with its other paths rather than replacing unrelated rules. These rules have not been deployed or emulator-tested against your project.
+Review `firebase.farm.rules.json` before making future changes. It makes water readings and pond profiles public, keeps diary and acknowledgements owner-only, limits push-token access to its owner and denies client writes to server alert state. Sensor ingestion requires a trusted `sensor_writer: true` claim, a farm owner, or an Admin SDK backend. Never change all database writes to public. For an existing project, merge the rules with its other paths rather than replacing unrelated rules. The file is retained for review and future deployment; a rules emulator audit is still recommended before relying on owner writes.
 
 ```sh
 firebase login

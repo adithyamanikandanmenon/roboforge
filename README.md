@@ -4,13 +4,13 @@
 
 The main navigation now includes a 24-hour daily summary/report, pond selector and profiles, active/resolved alerts, a private owner diary with chart markers, and owner tools. The interface is English-only. Demo owner editing is explicitly local and persists in this browser; real owner access uses Firebase Email/Password sign-in plus a verified `farm_owner` claim enforced by the included database rules. There are no physical equipment commands.
 
-See [FIREBASE_SETUP.md](FIREBASE_SETUP.md) for the remaining account and backend setup. Firebase is not configured yet, so the current publication still shows example readings. Cloud notifications, shared storage and real owner identity are implemented but not activated or externally verified. The optional five-minute background checker and messaging worker are included for deployment in your own project; enabling billing or creating accounts has not been performed.
+See [FIREBASE_SETUP.md](FIREBASE_SETUP.md) for remaining owner-account and background-notification setup. Firebase project `roboforge-5e54c` is configured on Spark with a Singapore Realtime Database and published pond-specific rules. Public sensor reads and blocked signed-out diary reads have been verified using the actual SDK. The database has no sensor records yet: the live view should wait for incoming data rather than show sample values. Background notification functions have not been deployed and billing has not been enabled.
 
 The main website is a simple dashboard for pond owners and everyday visitors. It explains water balance (pH), temperature, oxygen, clarity and surrounding sensor readings. Visitors can explore history, download readings and learn what the measurements mean without seeing device logs or JSON packets.
 
 ## Dashboard and Firebase data
 
-Firebase has not been set up for this project yet. The website therefore opens with clearly labeled example data. There are no genuine farm readings or trained predictions in this preview.
+The website is connected to the RoboForge Firebase Realtime Database. No genuine farm readings have arrived yet. Example mode is still available explicitly from Data connection and remains labeled; it is never used to disguise a live connection failure. There is no trained prediction model.
 
 When your Firebase Realtime Database is ready, set `public/pond-config.json` with the Firebase **web app** configuration and exact readings path, then rebuild and publish. All visitors will automatically receive live updates through the SDK's `onValue` listener. The Data connection dialog lets the farm owner try configuration in one tab without changing the shared website. Public visitors only read records. Verified owners can save profiles, diary entries, seen-alert marks and notification registrations through the separate owner client. Never place service-account private keys or administrative tokens in this file.
 

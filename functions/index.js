@@ -10,7 +10,7 @@ initializeApp();
 export const checkPonds = onSchedule(
   {
     schedule: "every 5 minutes",
-    region: "us-central1",
+    region: "asia-southeast1",
     timeZone: "UTC",
     maxInstances: 1,
     concurrency: 1,

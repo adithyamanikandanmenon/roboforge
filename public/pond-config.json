@@ -1,7 +1,15 @@
 {
   "pondName": "Pond 01",
   "location": "Fish farm",
-  "firebase": null,
+  "firebase": {
+    "apiKey": "AIzaSyAANF82UZdRk_XXPZrf1BDbaSxCVGrKokY",
+    "authDomain": "roboforge-5e54c.firebaseapp.com",
+    "projectId": "roboforge-5e54c",
+    "storageBucket": "roboforge-5e54c.firebasestorage.app",
+    "messagingSenderId": "393901402660",
+    "appId": "1:393901402660:web:668cd3adcea0cb4f5a06b1",
+    "databaseURL": "https://roboforge-5e54c-default-rtdb.asia-southeast1.firebasedatabase.app"
+  },
   "path": "water_quality/POND_01/readings",
   "anonymous": false,
   "staleMinutes": 10,

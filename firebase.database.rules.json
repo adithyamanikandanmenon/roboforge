@@ -1,0 +1,60 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "water_quality": {
+          "$pond": {
+            "devices": {
+              "$device": {
+                "readings": {
+                  ".indexOn": ["timestamp"],
+                  "$packet": {
+                    ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.exists()",
+                    ".validate": "newData.hasChildren(['packet_id','device_id','pond_id','timestamp','ph','temperature','dissolved_oxygen','turbidity','tds','air_temperature','aqi','rainfall','stored_at'])",
+                    "packet_id": { ".validate": "newData.val() === $packet" },
+                    "pond_id": { ".validate": "newData.val() === $pond" },
+                    "device_id": { ".validate": "newData.val() === $device" },
+                    "timestamp": {
+                      ".validate": "newData.isString() && newData.val().length <= 40"
+                    },
+                    "ph": {
+                      ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 14"
+                    },
+                    "temperature": {
+                      ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 60"
+                    },
+                    "dissolved_oxygen": {
+                      ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 30"
+                    },
+                    "turbidity": {
+                      ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 2000"
+                    },
+                    "tds": {
+                      ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 5000"
+                    },
+                    "air_temperature": {
+                      ".validate": "newData.isNumber() && newData.val() >= -40 && newData.val() <= 80"
+                    },
+                    "aqi": {
+                      ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 500"
+                    },
+                    "rainfall": {
+                      ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 500"
+                    },
+                    "stored_at": {
+                      ".validate": "newData.isNumber() && newData.val() <= now"
+                    },
+                    "$other": { ".validate": false }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

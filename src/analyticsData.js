@@ -39,6 +39,71 @@ export function thermalDifference(row) {
     ? row.air_temperature - row.temperature
     : null;
 }
+export function pairedSamples(rows, xKey, yKey) {
+  return rows.filter(
+    (r) => Number.isFinite(r[xKey]) && Number.isFinite(r[yKey]),
+  );
+}
+export function correlation(rows, xKey, yKey) {
+  const pairs = pairedSamples(rows, xKey, yKey);
+  if (pairs.length < 3) return null;
+  if (pairs.every(r=>r[xKey]===pairs[0][xKey]) || pairs.every(r=>r[yKey]===pairs[0][yKey])) return null;
+  const mx = pairs.reduce((n, r) => n + r[xKey], 0) / pairs.length,
+    my = pairs.reduce((n, r) => n + r[yKey], 0) / pairs.length;
+  let xx = 0,
+    yy = 0,
+    xy = 0;
+  for (const r of pairs) {
+    const x = r[xKey] - mx,
+      y = r[yKey] - my;
+    xx += x * x;
+    yy += y * y;
+    xy += x * y;
+  }
+  return xx > 0 && yy > 0
+    ? Math.max(-1, Math.min(1, xy / Math.sqrt(xx * yy)))
+    : null;
+}
+export function analyticsDataset({
+  profile,
+  rows,
+  targets,
+  source,
+  hours,
+  now = Date.now(),
+}) {
+  return JSON.stringify(
+    {
+      generatedAt: new Date(now).toISOString(),
+      source,
+      waterBody: {
+        id: profile.id,
+        name: profile.name,
+        type: profile.bodyType || "Pond",
+      },
+      hours,
+      targets,
+      statistics: analyseRows(rows, targets),
+      records: rows.map((r) => ({
+        packet_id: r.id,
+        timestamp: new Date(r.time).toISOString(),
+        ...Object.fromEntries(
+          metrics.map((m) => [
+            m.key,
+            Number.isFinite(r[m.key]) ? r[m.key] : null,
+          ]),
+        ),
+        ph_secondary: Number.isFinite(r.ph_secondary) ? r.ph_secondary : null,
+        ph_secondary_timestamp: Number.isFinite(r.ph_secondary_time)
+          ? new Date(r.ph_secondary_time).toISOString()
+          : null,
+        air_minus_water_c: thermalDifference(r),
+      })),
+    },
+    null,
+    2,
+  );
+}
 const escape = (value) =>
   String(value ?? "").replace(
     /[&<>"']/g,
@@ -59,7 +124,7 @@ export function analyticsReport({
   const stats = analyseRows(rows, targets);
   return `<!doctype html><html lang="en"><meta charset="utf-8"><title>RoboForge water observation report</title>
   <style>body{font:16px system-ui;margin:40px;color:#143442}h1{color:#087b79}table{border-collapse:collapse;width:100%;margin:24px 0}td,th{border:1px solid #bacfce;padding:9px;text-align:left}small{display:block;margin:8px 0}@media print{body{margin:0}button{display:none}}</style>
-  <h1>RoboForge · Water observation report</h1><h2>${escape(profile.name)}</h2><p>${escape(profile.bodyType || 'Pond')} · ${escape(profile.id)}</p>
+  <h1>RoboForge · Water observation report</h1><h2>${escape(profile.name)}</h2><p>${escape(profile.bodyType || "Pond")} · ${escape(profile.id)}</p>
   <p>Source: <strong>${escape(source)}</strong></p><p>Generated: ${escape(new Date(now).toISOString())}<br>Window: last ${hours} hours · ${rows.length} records (maximum 500 fetched)</p>
   <p>First record: ${rows.length ? escape(new Date(rows[0].time).toISOString()) : "None"}<br>Last record: ${rows.length ? escape(new Date(rows.at(-1).time).toISOString()) : "None"}</p>
   <p>Original acquisition timestamps are retained. Historical summaries do not establish current conditions. Means and within-target counts use numeric samples only; they are not time-weighted or a safety score. Missing samples remain missing.</p>

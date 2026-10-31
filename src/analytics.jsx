@@ -6,7 +6,15 @@ import {
   thermalDifference,
   analyticsReport,
   analyticsCSV,
+  analyticsDataset,
 } from "./analyticsData.js";
+import {
+  MetricSnapshots,
+  DualTrend,
+  Radar,
+  Scatter,
+  PacketBrowser,
+} from "./analyticsVisuals.jsx";
 import "./analytics.css";
 export default function Analytics({
   profile,
@@ -21,7 +29,8 @@ export default function Analytics({
 }) {
   const [hours, setHours] = useState(24),
     [primary, setPrimary] = useState("ph"),
-    [secondary, setSecondary] = useState("dissolved_oxygen");
+    [secondary, setSecondary] = useState("dissolved_oxygen"),
+    [layout, setLayout] = useState("overlay");
   const selectedRows = rows.filter(
     (r) => r.time >= now - hours * 3600000 && r.time <= now,
   );
@@ -106,6 +115,53 @@ export default function Analytics({
           selected period.
         </p>
       </section>
+      <details className="plain-panel connection-inspector">
+        <summary>Data connection &amp; integration details</summary>
+        <dl>
+          <dt>Source mode</dt>
+          <dd>{source}</dd>
+          <dt>Firebase project</dt>
+          <dd>{settings.firebase?.projectId || "Not configured"}</dd>
+          <dt>Readings path</dt>
+          <dd>
+            <code>{profile.path}</code>
+          </dd>
+          <dt>Connection status</dt>
+          <dd>{connection}</dd>
+          <dt>Last acquisition</dt>
+          <dd>{stamp(latest?.time)}</dd>
+        </dl>
+        <p className="analytics-note">
+          The dashboard uses one shared subscription for the selected water
+          body. Connection status confirms the reader connection, not sensor
+          calibration or hardware operation. Configure the device to send
+          timestamped packets to this path using its authorized account.
+        </p>
+      </details>
+      <p className="analytics-note">
+        Latest recorded measurements in this period. These may be old; use the
+        acquisition timestamp and connection status above to judge freshness.
+        Select a card to graph it.
+      </p>
+      <MetricSnapshots
+        stats={stats}
+        rows={selectedRows}
+        targets={targets}
+        onSelect={setPrimary}
+      />
+      <section className="plain-panel analytics-chart-controls">
+        <label>
+          Chart layout
+          <select value={layout} onChange={(e) => setLayout(e.target.value)}>
+            <option value="overlay">Combined dual-axis view</option>
+            <option value="separate">Separate charts</option>
+          </select>
+        </label>
+        <p className="analytics-note">
+          Choose measurements below, or select a reading card to change the
+          first measurement.
+        </p>
+      </section>
       <div className="analytics-charts">
         {[
           [primary, setPrimary, "First measurement"],
@@ -122,11 +178,13 @@ export default function Analytics({
                 ))}
               </select>
             </label>
-            <Chart
-              rows={selectedRows}
-              metric={metrics.find((m) => m.key === key)}
-              targets={targets}
-            />
+            {layout === "separate" && (
+              <Chart
+                rows={selectedRows}
+                metric={metrics.find((m) => m.key === key)}
+                targets={targets}
+              />
+            )}
             <p className="analytics-note">
               Each graph has its own labelled scale. Dashed lines show selected
               target bounds where configured. Similar movements do not establish
@@ -135,6 +193,50 @@ export default function Analytics({
           </section>
         ))}
       </div>
+      {layout === "overlay" && (
+        <section className="plain-panel">
+          <h2>Dual-measurement trend</h2>
+          <DualTrend
+            rows={selectedRows}
+            primary={primary}
+            secondary={secondary}
+            targets={targets}
+          />
+        </section>
+      )}
+      <div className="analytics-charts">
+        <Radar stats={stats} />
+        <Scatter rows={selectedRows} xKey={primary} yKey={secondary} />
+      </div>
+      <section className="plain-panel analytics-export-center">
+        <h2>Dataset &amp; reports</h2>
+        <p>
+          Export this water body's selected period with its original acquisition
+          timestamps. JSON includes source mode, saved targets and statistics.
+        </p>
+        <button
+          className="quiet-button"
+          disabled={!selectedRows.length}
+          onClick={() =>
+            download(
+              analyticsDataset({
+                profile,
+                rows: selectedRows,
+                targets,
+                source,
+                hours,
+                now,
+              }),
+              "application/json",
+              "json",
+            )
+          }
+        >
+          <Download size={16} />
+          Download JSON dataset
+        </button>
+      </section>
+      <PacketBrowser rows={selectedRows} />
       <section className="plain-panel">
         <div className="panel-title">
           <div>

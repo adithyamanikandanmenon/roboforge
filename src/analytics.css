@@ -2,6 +2,151 @@
   display: grid;
   gap: 20px;
 }
+.analytics-snapshots {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.snapshot-card {
+  text-align: left;
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid #2f596b;
+  border-radius: 16px;
+  background: linear-gradient(140deg, #173c50, #0e283b);
+  color: #eaf7fa;
+  cursor: pointer;
+  min-width: 0;
+}
+.snapshot-card:hover,
+.snapshot-card:focus-visible {
+  outline: 3px solid #53cbbc;
+  outline-offset: 2px;
+}
+.snapshot-card strong {
+  font-size: 27px;
+}
+.snapshot-card small {
+  font-size: 11px;
+  color: #c4dce3;
+}
+.snapshot-card svg {
+  width: 100%;
+  height: 44px;
+  color: #5fe0c8;
+}
+.snapshot-state {
+  font-size: 11px;
+}
+.snapshot-state.attention {
+  color: #ffd18a;
+}
+.snapshot-state.unknown {
+  color: #d5e1e6;
+}
+.snapshot-state.good {
+  color: #84edce;
+}
+.dual-trend,
+.target-radar,
+.scatter-plot {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.dual-trend text,
+.target-radar text,
+.scatter-plot text {
+  font: 11px system-ui;
+  fill: #385c6d;
+}
+.dual-legend {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  font-weight: 650;
+  margin: 16px 0;
+}
+.packet-scrubber {
+  display: grid;
+  gap: 10px;
+  font-size: 13px;
+}
+.packet-scrubber input {
+  width: 100%;
+  accent-color: #087d89;
+}
+.target-radar {
+  max-width: 390px;
+  margin: auto;
+}
+.scatter-plot {
+  max-width: 430px;
+  margin: auto;
+}
+.radar-values {
+  font-size: 12px;
+  line-height: 1.9;
+}
+.connection-inspector summary {
+  font-weight: 650;
+  cursor: pointer;
+}
+.connection-inspector dl {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 12px;
+  font-size: 13px;
+}
+.connection-inspector dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.analytics-chart-controls label {
+  display: grid;
+  gap: 10px;
+  max-width: 300px;
+}
+.analytics-actions input {
+  padding: 10px;
+  border: 1px solid #b0c9ce;
+  border-radius: 8px;
+  max-width: 100%;
+  min-width: 0;
+  background: white;
+  color: #173a49;
+}
+.analytics-export-center p {
+  font-size: 13px;
+  line-height: 1.8;
+}
+.analytics-snapshots > * {
+  min-width: 0;
+}
+@media (max-width: 1100px) {
+  .analytics-snapshots {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .snapshot-card {
+    padding: 14px;
+  }
+  .snapshot-card strong {
+    font-size: 23px;
+  }
+  .connection-inspector dl {
+    grid-template-columns: 1fr;
+  }
+  .connection-inspector dd {
+    margin-bottom: 12px;
+  }
+  .analytics-snapshots {
+    gap: 9px;
+  }
+}
 .water-analytics > *,
 .analytics-charts > * {
   min-width: 0;

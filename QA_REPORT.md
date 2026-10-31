@@ -1,5 +1,9 @@
 # Dashboard verification — 31 October 2026
 
+## Updated AquaPulse integration
+
+Added sparkline cards, combined dual-axis view with keyboard-accessible packet scrubber, target coverage radar, scatter plot, JSON dataset export, read-only connection details and searchable/paged packet history. Browser checked empty live data, explicit example mode, period changes, switching chart layouts, packet search and JSON download. Mathematical tests cover missing pairs, insufficient/constant series, positive/negative correlation and source/timestamp-preserving JSON. The app continues to use the existing Firebase reader and saved profiles.
+
 ## Integrated analytics follow-up
 
 All 41 automated tests pass, including numeric-only statistics, missing samples, adjacent-packet deltas, timestamp-preserving exports and escaped report metadata. The production build passes. Browser checks verified the empty live-data state with disabled exports, explicit example mode, 6-hour filtering to 24 records, independent measurement selection and downloading an HTML observation report. This verifies dashboard integration; no sensor ingestion or new Firebase backend was created by the analytics adaptation.

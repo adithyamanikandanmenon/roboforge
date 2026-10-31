@@ -28,6 +28,33 @@
         "name": {
           ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 80"
         },
+        "bodyType": {
+          ".validate": "newData.val() === 'Pond' || newData.val() === 'Tank' || newData.val() === 'Lake' || newData.val() === 'Reservoir' || newData.val() === 'River' || newData.val() === 'Canal' || newData.val() === 'Other'"
+        },
+        "sensorChecks": {
+          "$sensor": {
+            ".validate": "($sensor === 'ph' || $sensor === 'temperature' || $sensor === 'dissolved_oxygen' || $sensor === 'turbidity' || $sensor === 'tds' || $sensor === 'air_temperature' || $sensor === 'aqi' || $sensor === 'rainfall') && newData.hasChildren(['checkEveryDays','calibrateEveryDays','jumpLimit','maxGapMinutes'])",
+            "checkedAt": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= now + 60000 && (!data.exists() || newData.val() >= data.val())"
+            },
+            "calibratedAt": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= now + 60000 && (!data.exists() || newData.val() >= data.val())"
+            },
+            "checkEveryDays": {
+              ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 1 && newData.val() <= 3650"
+            },
+            "calibrateEveryDays": {
+              ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 1 && newData.val() <= 3650"
+            },
+            "jumpLimit": {
+              ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 1000000"
+            },
+            "maxGapMinutes": {
+              ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 1440"
+            },
+            "$other": { ".validate": false }
+          }
+        },
         "path": {
           ".validate": "newData.isString() && newData.val().length <= 240"
         },
@@ -85,6 +112,48 @@
         }
       }
     },
+    "care_reminders": {
+      "$pond": {
+        ".read": "auth != null && auth.token.farm_owner === true",
+        "$reminder": {
+          ".write": "auth != null && auth.token.farm_owner === true && root.child('pond_profiles').child($pond).exists() && newData.exists()",
+          ".validate": "newData.hasChildren(['id','pondId','title','kind','dueAt','repeat','createdAt','updatedAt']) && newData.child('id').val() === $reminder && newData.child('pondId').val() === $pond",
+          "id": {
+            ".validate": "newData.isString() && newData.val().length <= 80"
+          },
+          "pondId": { ".validate": "newData.isString()" },
+          "title": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 120"
+          },
+          "kind": {
+            ".validate": "newData.val() === 'Feeding' || newData.val() === 'Cleaning' || newData.val() === 'Sensor check' || newData.val() === 'Other'"
+          },
+          "dueAt": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+          "repeat": {
+            ".validate": "newData.val() === 'none' || newData.val() === 'daily' || newData.val() === 'weekly'"
+          },
+          "notes": {
+            ".validate": "newData.isString() && newData.val().length <= 1000"
+          },
+          "createdAt": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= now + 60000 && (!data.exists() || data.val() === newData.val())"
+          },
+          "updatedAt": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= now + 60000 && (!data.exists() || newData.val() >= data.val())"
+          },
+          "completedAt": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= now + 60000"
+          },
+          "lastCompletedAt": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= now + 60000"
+          },
+          "archivedAt": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= now + 60000"
+          },
+          "$other": { ".validate": false }
+        }
+      }
+    },
     "alert_ack": {
       "$pond": {
         ".read": "auth != null && auth.token.farm_owner === true",
@@ -121,6 +190,7 @@
       }
     },
     "server_alert_state": { ".read": false, ".write": false },
+    "server_reminder_state": { ".read": false, ".write": false },
     "server_alert_log": {
       ".read": "auth != null && auth.token.farm_owner === true",
       ".write": false

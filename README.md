@@ -38,6 +38,16 @@ Dashboard status compares measurements to **example** target ranges. These are n
 
 The technical simulator is retained at `?view=simulator` for development and teaching. It is separate from the main visitor experience; its original documentation follows.
 
+## Water bodies, sensor confidence and care
+
+Open **Water bodies → Add water body** as a verified owner (or enable **Owner tools → Try owner tools locally** in example mode). Choose Pond, Tank, Lake, Reservoir, River, Canal or Other. Each has a unique ID and Firebase readings path, its own targets and sensor records. The selector at the top switches the dashboard, history, diary and care schedule together. Save a water-body profile before creating its live reminders. Adding a profile does not create measurements or connect hardware automatically.
+
+**Sensor confidence** shows the last recorded check and calibration, their next due dates, and unusually large changes between two recent numeric readings. Owners can record maintenance and set intervals, change limits and the maximum comparison gap for all eight measurements. Starting values are examples. Missing records do not establish a fault; current maintenance does not guarantee accuracy. Raw readings and water-quality alerts remain available when a sensor is flagged.
+
+**Care reminders** are private to owners and separate from water-quality alerts. Schedule feeding, cleaning, sensor checks or another task, once or every 24 hours / 7 days. Mark done, snooze one hour, edit or archive. Completing a repeat advances to the first future occurrence without creating missed-task backlogs. Reminders update in-app every 30 seconds; notifications with the website closed require the optional deployed Firebase function, Web Push key and an enrolled owner device. These backend services are not deployed on the current Spark project. Demo edits stay in local browser storage.
+
+**Large-screen view** removes editing and charts, shows five large water metrics, selected targets, timestamps, explicit condition words and sensor-jump warnings. It works on a phone or farm display; optional full screen is browser-dependent. Open `?view=display&water=POND_01` for a direct display link. Old or unavailable readings say that the current condition is unknown. Example data is prominently labeled.
+
 ## Technical simulator
 
 A functional React + Tailwind application for virtual water-quality sensors → ESP32 transmitter → wireless transport → ESP32 receiver → simulated Wi-Fi → Firebase Realtime Database.

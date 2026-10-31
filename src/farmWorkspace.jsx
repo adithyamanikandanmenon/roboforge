@@ -23,10 +23,17 @@ import {
   reportText,
 } from "./farmInsights.js";
 import { FarmClient } from "./farmClient.js";
+import {
+  waterBodyTypes,
+  recordSensorEvent,
+  validateReminder,
+  completeReminder,
+} from "./waterOperations.js";
 const key = "roboforge-farm-demo-v1";
 const initialProfile = {
   id: "POND_01",
   name: "Pond 01",
+  bodyType: "Pond",
   location: "Fish farm",
   fishSpecies: "Not specified",
   notes: "",
@@ -46,13 +53,14 @@ function cached() {
     )
       return value;
   } catch {}
-  return { profiles: [initialProfile], activities: {}, ack: {} };
+  return { profiles: [initialProfile], activities: {}, ack: {}, reminders: {} };
 }
 export function useFarmWorkspace(settings, mode) {
   const [local, setLocal] = useState(cached),
     [profiles, setProfiles] = useState(() => cached().profiles),
     [selectedId, setSelectedId] = useState("POND_01"),
     [activities, setActivities] = useState([]),
+    [reminders, setReminders] = useState([]),
     [ack, setAck] = useState({}),
     [session, setSession] = useState({ user: null, isOwner: false }),
     [demoOwner, setDemoOwner] = useState(false),
@@ -60,6 +68,7 @@ export function useFarmWorkspace(settings, mode) {
     [busy, setBusy] = useState(false),
     [pushOn, setPushOn] = useState(false);
   const clientRef = useRef(null);
+  const requestedId = useRef(new URLSearchParams(location.search).get("water"));
   const configKey = JSON.stringify(settings.firebase);
   useEffect(() => {
     setDemoOwner(false);
@@ -129,6 +138,14 @@ export function useFarmWorkspace(settings, mode) {
     };
   }, [mode, configKey]);
   useEffect(() => {
+    if (
+      requestedId.current &&
+      profiles.some((p) => p.id === requestedId.current)
+    ) {
+      setSelectedId(requestedId.current);
+      requestedId.current = null;
+      return;
+    }
     if (!profiles.some((p) => p.id === selectedId))
       setSelectedId(profiles[0]?.id || "POND_01");
   }, [profiles, selectedId]);
@@ -136,9 +153,11 @@ export function useFarmWorkspace(settings, mode) {
     if (mode === "demo") {
       setActivities(local.activities[selectedId] || []);
       setAck(local.ack[selectedId] || {});
+      setReminders(local.reminders?.[selectedId] || []);
       return;
     }
     setActivities([]);
+    setReminders([]);
     setAck({});
     if (!session.isOwner || !clientRef.current?.sdk) return;
     const client = clientRef.current;
@@ -157,9 +176,24 @@ export function useFarmWorkspace(settings, mode) {
       (v) => setAck(v || {}),
       (e) => setNotice(e.message),
     );
+    const offReminders = client.watch(
+      `care_reminders/${selectedId}`,
+      (v) =>
+        setReminders(
+          Object.entries(v || {}).flatMap(([id, row]) => {
+            try {
+              return [validateReminder({ ...row, id }, selectedId)];
+            } catch {
+              return [];
+            }
+          }),
+        ),
+      (e) => setNotice(`Care reminders could not load: ${e.message}`),
+    );
     return () => {
       offA();
       offAck();
+      offReminders();
     };
   }, [mode, selectedId, session.isOwner, local]);
   const profile =
@@ -194,6 +228,7 @@ export function useFarmWorkspace(settings, mode) {
       setProfiles(next);
     } else await clientRef.current.write(`pond_profiles/${p.id}`, p);
     setSelectedId(p.id);
+    requestedId.current = null;
     setNotice(
       mode === "demo"
         ? "Pond profile saved in this browser’s demo."
@@ -257,11 +292,115 @@ export function useFarmWorkspace(settings, mode) {
         value,
       );
   }
+  async function saveReminder(value) {
+    if (!canEdit) throw new Error("Sign in as owner to manage care reminders.");
+    const now = Date.now();
+    const reminder = validateReminder(
+      {
+        ...value,
+        id: value.id || crypto.randomUUID(),
+        pondId: selectedId,
+        createdAt: value.createdAt || now,
+        updatedAt: now,
+      },
+      selectedId,
+      now,
+    );
+    const conflict = () =>
+      new Error(
+        "This reminder changed elsewhere. Refresh it before editing again.",
+      );
+    if (mode === "demo") {
+      const existing = (local.reminders?.[selectedId] || []).find(
+        (r) => r.id === reminder.id,
+      );
+      if (value.id && existing?.updatedAt !== value.updatedAt) throw conflict();
+      const list = [
+        reminder,
+        ...(local.reminders?.[selectedId] || []).filter(
+          (r) => r.id !== reminder.id,
+        ),
+      ];
+      persist({
+        ...local,
+        reminders: { ...(local.reminders || {}), [selectedId]: list },
+      });
+    } else if (value.id) {
+      const result = await clientRef.current.transaction(
+        `care_reminders/${selectedId}/${reminder.id}`,
+        (current) =>
+          current?.updatedAt === value.updatedAt ? reminder : undefined,
+      );
+      if (!result.committed) throw conflict();
+    } else
+      await clientRef.current.write(
+        `care_reminders/${selectedId}/${reminder.id}`,
+        reminder,
+      );
+    setNotice(
+      mode === "demo"
+        ? "Care reminder saved in this browser’s demo."
+        : "Care reminder saved to Firebase.",
+    );
+  }
+  async function changeReminder(reminder, action) {
+    if (!canEdit) throw new Error("Sign in as owner to manage care reminders.");
+    const update = (current) => {
+      if (!current || current.updatedAt !== reminder.updatedAt) return;
+      const now = Date.now();
+      if (action === "complete") return completeReminder(current, now);
+      if (action === "snooze")
+        return { ...current, dueAt: now + 3600000, updatedAt: now };
+      if (action === "archive")
+        return { ...current, archivedAt: now, updatedAt: now };
+      throw new Error("Unknown reminder action.");
+    };
+    if (mode === "demo") {
+      let changed = false;
+      const list = (local.reminders?.[selectedId] || []).map((r) => {
+        if (r.id !== reminder.id) return r;
+        const next = update(r);
+        if (next) changed = true;
+        return next || r;
+      });
+      if (!changed)
+        throw new Error(
+          "This reminder was already updated. Please use its latest version.",
+        );
+      persist({
+        ...local,
+        reminders: { ...(local.reminders || {}), [selectedId]: list },
+      });
+    } else {
+      const result = await clientRef.current.transaction(
+        `care_reminders/${selectedId}/${reminder.id}`,
+        update,
+      );
+      if (!result.committed)
+        throw new Error(
+          "This reminder was already updated. Please use its latest version.",
+        );
+    }
+    setNotice(
+      action === "complete"
+        ? "Task marked done. Repeating tasks advance to their next due time."
+        : action === "snooze"
+          ? "Reminder moved one hour ahead."
+          : "Reminder archived. Its record is retained.",
+    );
+  }
+  async function saveSensorEvent(sensor, kind, at) {
+    await saveProfile(recordSensorEvent(profile, sensor, kind, at));
+  }
   return {
     profiles,
     profile,
     selectedId,
-    setSelectedId,
+    setSelectedId(id) {
+      requestedId.current = null;
+      setSelectedId(id);
+    },
+    reminders: mode === "demo" || session.isOwner ? reminders : [],
     activities: mode === "demo" || session.isOwner ? activities : [],
     ack,
     session,
@@ -273,6 +412,9 @@ export function useFarmWorkspace(settings, mode) {
     busy,
     action,
     saveProfile,
+    saveReminder,
+    changeReminder,
+    saveSensorEvent,
     addActivity,
     acknowledge,
     pushOn: pushOn === selectedId,
@@ -424,6 +566,7 @@ export function FarmTools({
   connection,
   settings,
   onConnect,
+  onOwner,
 }) {
   const alerts = buildAlerts(rows, targets, {
     now,
@@ -635,150 +778,173 @@ export function FarmTools({
         </p>
       </section>
     );
-  if (section !== "owner") return null;
+  if (!["owner", "waterbodies"].includes(section)) return null;
   return (
-    <div className="owner-layout">
-      <section className="plain-panel farm-panel">
-        <div className="panel-title">
-          <div>
-            <h2>Owner access</h2>
-            <p>Public visitors can see readings. Owners manage the farm.</p>
+    <div
+      className={section === "owner" ? "owner-layout" : "water-body-management"}
+    >
+      {section === "owner" && (
+        <section className="plain-panel farm-panel">
+          <div className="panel-title">
+            <div>
+              <h2>Owner access</h2>
+              <p>Public visitors can see readings. Owners manage the farm.</p>
+            </div>
+            <ShieldCheck size={21} />
           </div>
-          <ShieldCheck size={21} />
-        </div>
-        {mode === "demo" ? (
-          <div className="owner-access-content">
-            <div className="demo-access-note">
-              <Info size={19} />
+          {mode === "demo" ? (
+            <div className="owner-access-content">
+              <div className="demo-access-note">
+                <Info size={19} />
+                <p>
+                  Local owner demo. This is a way to try editing, not a real
+                  signed-in account. Changes stay in your browser.
+                </p>
+              </div>
+              <button
+                className={farm.canEdit ? "quiet-button" : "green-button"}
+                onClick={() => farm.setDemoOwner(!farm.demoOwner)}
+              >
+                {farm.canEdit ? "Leave owner demo" : "Try owner tools locally"}
+              </button>
+              <button className="quiet-button" onClick={onConnect}>
+                Connect Firebase
+              </button>
+            </div>
+          ) : farm.session.user ? (
+            <div className="owner-access-content">
+              <p>{farm.session.user.email}</p>
               <p>
-                Local owner demo. This is a way to try editing, not a real
-                signed-in account. Changes stay in your browser.
+                {farm.session.isOwner
+                  ? "Verified farm owner"
+                  : "Signed in, but the farm_owner role has not been granted."}
               </p>
+              <button
+                className="quiet-button"
+                onClick={() => farm.action(() => farm.logout())}
+              >
+                <LogOut size={14} />
+                Sign out
+              </button>
             </div>
-            <button
-              className={farm.canEdit ? "quiet-button" : "green-button"}
-              onClick={() => farm.setDemoOwner(!farm.demoOwner)}
+          ) : (
+            <form
+              className="owner-login"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void farm.action(async () => {
+                  try {
+                    await farm.login(email, password);
+                  } finally {
+                    setPassword("");
+                  }
+                });
+              }}
             >
-              {farm.canEdit ? "Leave owner demo" : "Try owner tools locally"}
-            </button>
-            <button className="quiet-button" onClick={onConnect}>
-              Connect Firebase
-            </button>
-          </div>
-        ) : farm.session.user ? (
-          <div className="owner-access-content">
-            <p>{farm.session.user.email}</p>
+              <label>
+                Email
+                <input
+                  type="email"
+                  autoComplete="username"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </label>
+              <label>
+                Password
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </label>
+              <button className="green-button" disabled={farm.busy}>
+                Sign in as owner
+              </button>
+              <p>
+                Ask the project administrator to create your account and grant
+                the farm owner role.
+              </p>
+            </form>
+          )}
+          <div className="setup-status">
+            <h3>Connection checklist</h3>
+            {[
+              [!!settings.firebase, "Firebase web configuration"],
+              [
+                mode === "live" && connection === "connected",
+                "Readings connection",
+              ],
+              [farm.session.isOwner, "Verified owner account"],
+              [!!settings.vapidKey, "Web Push key"],
+            ].map(([ready, label]) => (
+              <div key={label}>
+                <span className={ready ? "ready" : ""}>
+                  {ready ? "Ready" : "Not set up"}
+                </span>
+                {label}
+              </div>
+            ))}
             <p>
-              {farm.session.isOwner
-                ? "Verified farm owner"
-                : "Signed in, but the farm_owner role has not been granted."}
+              Backend deployment and message delivery still need verification in
+              your Firebase project.
             </p>
-            <button
-              className="quiet-button"
-              onClick={() => farm.action(() => farm.logout())}
+            <a
+              className="setup-guide-link"
+              href="https://github.com/adithyamanikandanmenon/roboforge/blob/main/FIREBASE_SETUP.md"
+              target="_blank"
+              rel="noreferrer"
             >
-              <LogOut size={14} />
-              Sign out
-            </button>
+              Open Firebase setup guide <ArrowRight size={12} />
+            </a>
           </div>
-        ) : (
-          <form
-            className="owner-login"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void farm.action(async () => {
-                try {
-                  await farm.login(email, password);
-                } finally {
-                  setPassword("");
-                }
-              });
-            }}
-          >
-            <label>
-              Email
-              <input
-                type="email"
-                autoComplete="username"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </label>
-            <label>
-              Password
-              <input
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </label>
-            <button className="green-button" disabled={farm.busy}>
-              Sign in as owner
-            </button>
-            <p>
-              Ask the project administrator to create your account and grant the
-              farm owner role.
-            </p>
-          </form>
-        )}
-        <div className="setup-status">
-          <h3>Connection checklist</h3>
-          {[
-            [!!settings.firebase, "Firebase web configuration"],
-            [
-              mode === "live" && connection === "connected",
-              "Readings connection",
-            ],
-            [farm.session.isOwner, "Verified owner account"],
-            [!!settings.vapidKey, "Web Push key"],
-          ].map(([ready, label]) => (
-            <div key={label}>
-              <span className={ready ? "ready" : ""}>
-                {ready ? "Ready" : "Not set up"}
-              </span>
-              {label}
-            </div>
-          ))}
-          <p>
-            Backend deployment and message delivery still need verification in
-            your Firebase project.
-          </p>
-          <a
-            className="setup-guide-link"
-            href="https://github.com/adithyamanikandanmenon/roboforge/blob/main/FIREBASE_SETUP.md"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Open Firebase setup guide <ArrowRight size={12} />
-          </a>
-        </div>
-      </section>
+        </section>
+      )}
       <section className="plain-panel farm-panel">
         <div className="panel-title">
           <div>
-            <h2>Pond profiles</h2>
-            <p>Names, fish species, photos and owner-selected targets.</p>
+            <h2>Your water bodies</h2>
+            <p>
+              Add ponds, tanks, lakes, reservoirs, rivers and other monitored
+              water bodies.
+            </p>
           </div>
           <button
             className="quiet-button"
-            disabled={!farm.canEdit}
             onClick={() => {
+              if (!farm.canEdit) {
+                onOwner();
+                return;
+              }
               setCreatingProfile(true);
               setProfileDraft({
                 ...initialProfile,
                 id: "",
-                name: "New pond",
+                name: "New water body",
                 targets: structuredClone(defaultTargets),
               });
             }}
           >
             <Plus size={13} />
-            Add pond
+            Add water body
           </button>
         </div>
+        {!farm.canEdit && (
+          <div className="owner-gate">
+            <UserRound size={18} />
+            <p>
+              {mode === "demo"
+                ? "Enable the local owner demo in Owner tools to add and edit water bodies."
+                : "Sign in with a verified owner account to add or edit water bodies."}
+            </p>
+            <button className="quiet-button" onClick={onOwner}>
+              Owner tools
+            </button>
+          </div>
+        )}
         <div className="profile-list">
           {farm.profiles.map((p) => (
             <button
@@ -789,6 +955,7 @@ export function FarmTools({
               <span>
                 {p.name}
                 <small>
+                  {p.bodyType || "Pond"} ·{" "}
                   {p.fishSpecies || "Species not specified"} · {p.location}
                 </small>
               </span>
@@ -814,7 +981,7 @@ export function FarmTools({
             }}
           >
             <Settings size={14} />
-            Edit selected pond
+            Edit selected water body
           </button>
           <span className="farm-note">
             Targets should be confirmed for your fish species.
@@ -839,9 +1006,25 @@ export function FarmTools({
             }}
           >
             <div className="profile-fields">
+              <label>
+                Water body type
+                <select
+                  value={profileDraft.bodyType || "Pond"}
+                  onChange={(e) =>
+                    setProfileDraft({
+                      ...profileDraft,
+                      bodyType: e.target.value,
+                    })
+                  }
+                >
+                  {waterBodyTypes.map((type) => (
+                    <option key={type}>{type}</option>
+                  ))}
+                </select>
+              </label>
               {[
-                ["id", "Pond ID"],
-                ["name", "Pond name"],
+                ["id", "Water body ID"],
+                ["name", "Water body name"],
                 ["fishSpecies", "Fish species"],
                 ["location", "Location"],
                 ["photoUrl", "Photo URL (HTTPS, optional)"],
@@ -924,7 +1107,7 @@ export function FarmTools({
                 className="green-button"
                 disabled={farm.busy}
               >
-                Save pond profile
+                Save water body
               </button>
               <button
                 type="button"

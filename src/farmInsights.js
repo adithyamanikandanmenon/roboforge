@@ -1,4 +1,5 @@
 import { metrics, assess, defaultTargets } from "./pondData.js";
+import { waterBodyTypes, normalizeSensorChecks } from "./waterOperations.js";
 export const activityTypes = [
   "Feeding",
   "Aerator use",
@@ -8,6 +9,9 @@ export const activityTypes = [
   "Other",
 ];
 export function validateProfile(profile) {
+  const bodyType = profile.bodyType || "Pond";
+  if (!waterBodyTypes.includes(bodyType))
+    throw new Error("Choose a supported water body type.");
   if (!/^[A-Za-z0-9_-]{1,60}$/.test(profile.id || ""))
     throw new Error(
       "Pond ID can contain letters, numbers, underscores and hyphens.",
@@ -40,6 +44,8 @@ export function validateProfile(profile) {
   }
   return {
     ...profile,
+    bodyType,
+    sensorChecks: normalizeSensorChecks(profile.sensorChecks),
     targets,
     name: profile.name.trim(),
     fishSpecies: (profile.fishSpecies || "Not specified").slice(0, 80),

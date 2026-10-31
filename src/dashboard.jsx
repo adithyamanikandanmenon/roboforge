@@ -27,6 +27,9 @@ import {
   Fish,
   Database,
   Info,
+  ShieldCheck,
+  CalendarClock,
+  Maximize2,
 } from "lucide-react";
 import {
   metrics,
@@ -46,6 +49,13 @@ import {
   ActivityMarkers,
 } from "./farmWorkspace.jsx";
 import { buildAlerts } from "./farmInsights.js";
+import {
+  SensorConfidence,
+  SensorSummary,
+  CareReminders,
+  LargeScreen,
+} from "./waterFeatures.jsx";
+import { reminderStatus } from "./waterOperations.js";
 import "./farm.css";
 import "./dashboard.css";
 const initialSettings = {
@@ -252,9 +262,16 @@ function Dashboard() {
     [connection, setConnection] = useState("demo"),
     [error, setError] = useState(""),
     [section, setSection] = useState(
-      ["alerts", "activity", "owner", "history", "guide"].includes(
-        new URLSearchParams(location.search).get("section"),
-      )
+      [
+        "alerts",
+        "activity",
+        "owner",
+        "history",
+        "guide",
+        "waterbodies",
+        "sensors",
+        "reminders",
+      ].includes(new URLSearchParams(location.search).get("section"))
         ? new URLSearchParams(location.search).get("section")
         : "overview",
     ),
@@ -266,19 +283,41 @@ function Dashboard() {
     [configText, setConfigText] = useState(""),
     [formError, setFormError] = useState(""),
     [targets, setTargets] = useState(defaultTargets),
-    [retry, setRetry] = useState(0);
+    [retry, setRetry] = useState(0),
+    [display, setDisplay] = useState(
+      new URLSearchParams(location.search).get("view") === "display",
+    );
   const farm = useFarmWorkspace(settings, mode);
   useEffect(() => {
+    if (display) {
+      const url = new URL(location.href);
+      url.searchParams.set("water", farm.selectedId);
+      history.replaceState(null, "", url);
+    }
+  }, [display, farm.selectedId]);
+  const activeSource = useRef("");
+  useEffect(() => {
     const profile = farm.profile;
-    setSettings((previous) => ({
-      ...previous,
-      pondName: profile.name,
-      location: profile.location,
-      path: profile.path,
-      staleMinutes: profile.staleMinutes,
-    }));
+    setSettings((previous) =>
+      previous.pondName === profile.name &&
+      previous.location === profile.location &&
+      previous.path === profile.path &&
+      previous.staleMinutes === profile.staleMinutes
+        ? previous
+        : {
+            ...previous,
+            pondName: profile.name,
+            location: profile.location,
+            path: profile.path,
+            staleMinutes: profile.staleMinutes,
+          },
+    );
     setTargets(profile.targets);
-    setRows(mode === "demo" ? makeDemo() : []);
+    const source = `${mode}:${profile.id}:${profile.path}`;
+    if (activeSource.current !== source) {
+      setRows(mode === "demo" ? makeDemo() : []);
+      activeSource.current = source;
+    }
   }, [farm.profile]);
   const mounted = useRef(true);
   useEffect(() => {
@@ -483,8 +522,38 @@ function Dashboard() {
   }
   function navigate(next) {
     setSection(next);
+    const url = new URL(location.href);
+    url.searchParams.set("section", next);
+    history.replaceState(null, "", url);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
+  function setDisplayMode(value) {
+    setDisplay(value);
+    const url = new URL(location.href);
+    if (value) {
+      url.searchParams.set("view", "display");
+      url.searchParams.set("water", farm.selectedId);
+    } else {
+      url.searchParams.delete("view");
+      url.searchParams.delete("water");
+      if (document.fullscreenElement)
+        void document.exitFullscreen().catch(() => {});
+    }
+    history.replaceState(null, "", url);
+    window.scrollTo(0, 0);
+  }
+  if (display)
+    return (
+      <LargeScreen
+        farm={farm}
+        rows={rows}
+        targets={targets}
+        now={now}
+        mode={mode}
+        connection={connection}
+        onExit={() => setDisplayMode(false)}
+      />
+    );
   return (
     <div className="pond-app">
       <aside className="pond-sidebar">
@@ -500,9 +569,12 @@ function Dashboard() {
         <nav aria-label="Main navigation">
           {[
             ["overview", "Pond overview", LayoutDashboard],
+            ["waterbodies", "Water bodies", Waves],
             ["history", "Water history", History],
             ["guide", "Understand the readings", BookOpen],
             ["alerts", "Pond alerts", AlertCircle],
+            ["sensors", "Sensor confidence", ShieldCheck],
+            ["reminders", "Care reminders", CalendarClock],
             ["activity", "Activity diary", History],
             ["owner", "Owner tools", Settings],
           ].map(([key, title, Icon]) => (
@@ -525,6 +597,19 @@ function Dashboard() {
                   }
                 </b>
               )}
+              {key === "reminders" &&
+                farm.canEdit &&
+                farm.reminders.some(
+                  (r) => reminderStatus(r, now) === "due",
+                ) && (
+                  <b className="nav-alert-count">
+                    {
+                      farm.reminders.filter(
+                        (r) => reminderStatus(r, now) === "due",
+                      ).length
+                    }
+                  </b>
+                )}
               {section === key && <i />}
             </button>
           ))}
@@ -569,7 +654,7 @@ function Dashboard() {
             <span className="top-separator">/</span>
             <select
               className="header-pond-select"
-              aria-label="Choose pond"
+              aria-label="Choose water body"
               value={farm.selectedId}
               onChange={(e) => farm.setSelectedId(e.target.value)}
             >
@@ -581,6 +666,13 @@ function Dashboard() {
             </select>
           </div>
           <div>
+            <button
+              className="top-display-button"
+              onClick={() => setDisplayMode(true)}
+            >
+              <Maximize2 size={15} />
+              Large-screen view
+            </button>
             <span
               className={`connection-dot ${mode === "live" && connection !== "connected" ? "disconnected" : ""}`}
             />
@@ -609,30 +701,42 @@ function Dashboard() {
                 A HEALTHIER POND STARTS WITH UNDERSTANDING
               </p>
               <h1>
-                {section === "history"
-                  ? "Your water, over time."
-                  : section === "guide"
-                    ? "Good information. Simply explained."
-                    : section === "alerts"
-                      ? "Know what needs attention."
-                      : section === "activity"
-                        ? "The story around your pond."
-                        : section === "owner"
-                          ? "Your farm, your settings."
-                          : "Your pond, at a glance."}
+                {section === "waterbodies"
+                  ? "All your water, in one place."
+                  : section === "sensors"
+                    ? "Good readings start with good sensors."
+                    : section === "reminders"
+                      ? "A little care, at the right time."
+                      : section === "history"
+                        ? "Your water, over time."
+                        : section === "guide"
+                          ? "Good information. Simply explained."
+                          : section === "alerts"
+                            ? "Know what needs attention."
+                            : section === "activity"
+                              ? "The story around your pond."
+                              : section === "owner"
+                                ? "Your farm, your settings."
+                                : "Your pond, at a glance."}
               </h1>
               <p>
-                {section === "history"
-                  ? "See how conditions have changed and explore earlier readings."
-                  : section === "guide"
-                    ? "You don’t need to be an expert to understand your water."
-                    : section === "alerts"
-                      ? "Clear alerts, useful context and recorded resolution."
-                      : section === "activity"
-                        ? "Keep track of feeding, water changes and everyday care."
-                        : section === "owner"
-                          ? "Manage pond profiles, access and notifications."
-                          : "The numbers that matter, explained in a way that makes sense."}
+                {section === "waterbodies"
+                  ? "Add a pond, tank, lake or another water body, then switch between them."
+                  : section === "sensors"
+                    ? "See what was checked, what is due and which changes need verification."
+                    : section === "reminders"
+                      ? "Schedule everyday tasks without mixing them with water-quality alerts."
+                      : section === "history"
+                        ? "See how conditions have changed and explore earlier readings."
+                        : section === "guide"
+                          ? "You don’t need to be an expert to understand your water."
+                          : section === "alerts"
+                            ? "Clear alerts, useful context and recorded resolution."
+                            : section === "activity"
+                              ? "Keep track of feeding, water changes and everyday care."
+                              : section === "owner"
+                                ? "Manage pond profiles, access and notifications."
+                                : "The numbers that matter, explained in a way that makes sense."}
               </p>
             </div>
             <button className="quiet-button" onClick={openSettings}>
@@ -672,7 +776,7 @@ function Dashboard() {
               </button>
             </div>
           )}
-          {["alerts", "activity", "owner"].includes(section) && (
+          {["alerts", "activity", "owner", "waterbodies"].includes(section) && (
             <FarmTools
               farm={farm}
               section={section}
@@ -683,6 +787,27 @@ function Dashboard() {
               connection={connection}
               settings={settings}
               onConnect={openSettings}
+              onOwner={() => navigate("owner")}
+            />
+          )}
+          {section === "sensors" && (
+            <SensorConfidence
+              key={farm.selectedId}
+              farm={farm}
+              rows={rows}
+              now={now}
+              connected={mode === "demo" || connection === "connected"}
+              mode={mode}
+              onOwner={() => navigate("owner")}
+            />
+          )}
+          {section === "reminders" && (
+            <CareReminders
+              key={farm.selectedId}
+              farm={farm}
+              now={now}
+              mode={mode}
+              onOwner={() => navigate("owner")}
             />
           )}
           {mode === "live" && (error || connection === "offline") && (
@@ -700,6 +825,13 @@ function Dashboard() {
           )}
           {section === "overview" && (
             <>
+              <SensorSummary
+                farm={farm}
+                rows={rows}
+                now={now}
+                connected={mode === "demo" || connection === "connected"}
+                onOpen={() => navigate("sensors")}
+              />
               <DailyBrief
                 rows={rows}
                 targets={targets}

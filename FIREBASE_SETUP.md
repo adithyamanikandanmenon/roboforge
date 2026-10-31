@@ -32,11 +32,15 @@ firebase use --add
 firebase deploy --only database --project YOUR_PROJECT_ID
 ```
 
-Use a supported Firebase CLI from its official package. The repository includes Firebase deployment configuration but no project alias or credentials.
+Use a supported Firebase CLI from its official package. The repository includes the `roboforge-5e54c` project alias and deployment configuration, with no administrative credentials.
 
 ## 3. Save profiles and use the diary
 
-On the website, open Owner tools and sign in. Edit and save a profile for each pond: ID, name, fish species, location, HTTPS photo URL, readings path, update timeout and the five water target ranges. Starting ranges are examples; confirm suitable limits with a farm expert. Profile changes are saved to Firebase and become visible to visitors.
+On the website, open Owner tools and sign in. Open Water bodies to add a pond, tank, lake, reservoir, river, canal or other water body. Edit and save each profile: unique ID, name, type, fish species, location, HTTPS photo URL, readings path, update timeout and the five water target ranges. Starting ranges are examples; confirm suitable limits with a farm expert. Profile changes are saved to Firebase and become visible to visitors. Point each device at its corresponding readings path; adding a profile alone does not start ingestion.
+
+Sensor confidence stores public maintenance dates and per-sensor intervals/jump settings under `pond_profiles/{id}/sensorChecks/{metric}`. Dates are never fabricated, and recorded last-check times do not move backwards. Limits are examples, not manufacturer recommendations. Two numeric samples within the chosen gap are needed to flag a jump. Stale/missing/disconnected readings give an unknown current assessment.
+
+Save the water-body profile first, then create owner-only tasks under `care_reminders/{id}/{reminderId}`. Each task has `id`, matching `pondId`, `title`, `kind`, `dueAt` (epoch milliseconds), `repeat` (`none`, `daily`, `weekly`), `createdAt`, `updatedAt` and optional notes/completion/archive timestamps. Client hard deletion is blocked; archive retains a record. Edits and completion use transactions to avoid silently replacing a newer version. The live site needs the updated validation rules in this repository for these fields and the new private reminders path.
 
 Diary entries (feeding, aerator use, water change, rain, sensor check or other) are private to verified owners. Entries are append-only in the supplied rules. They are shown as dated markers alongside water trends; this illustrates timing, not proof of cause. In demo mode profiles, diary entries and seen-alert marks persist only in this browser, clearly labeled as a local demo. No physical equipment controls are exposed.
 
@@ -51,7 +55,7 @@ cd ..
 firebase deploy --only functions:pond-alerts --project YOUR_PROJECT_ID
 ```
 
-The scheduled function checks saved pond profiles every five minutes, even when no website tab is open. It compares the newest record with targets and checks stopped updates. It sends a message on condition changes, not every unchanged reading. It uses private server state for duplicate suppression and logs delivery results under `server_alert_log`. Delivery is best-effort, not guaranteed; a server interruption between state update and delivery may lose a message. Readings-page alerts work without this backend whenever data is available.
+The scheduled function checks saved water-body profiles every five minutes, even when no website tab is open. It compares the newest record with targets and checks stopped updates. It sends a message on condition changes, not every unchanged reading. It uses private server state for duplicate suppression and logs delivery results under `server_alert_log`. Independently, due care tasks send a distinct “Care reminder” once per due time to registered owner devices for that water body, with delivery state under private `server_reminder_state`. Completed/archived tasks are skipped. Reminder scheduling stays separate from water-quality evaluation. Delivery is best-effort, not guaranteed; a server interruption between state update and delivery may lose a message. In-app reminders and readings-page alerts work without this backend while the website is open.
 
 In Project settings → Cloud Messaging → Web Push certificates, generate a key pair. Put the public key in `public/pond-config.json` as `vapidKey` and republish. Sign in as owner, select the pond, open Pond alerts and click Enable phone alerts. The button requests browser permission and registers this device for that pond. Public visitors cannot register owner alerts. A device's registration is assigned to the pond selected when enabling it; enabling on another pond replaces the assignment. Sign out through the app to remove a registration enabled in the current session. Browser support and OS notification settings affect delivery. iOS may require adding the website to the Home Screen.
 
@@ -63,6 +67,6 @@ The messaging service worker uses official Firebase SDK scripts and does not cac
 - Confirm public visitors can read intended pond readings but cannot change profiles or view diary entries.
 - Sign in as the owner and confirm shared profile/diary writes succeed, while an account without the owner claim is denied by the database.
 - Test a controlled target exception and recovery, then stop test updates to verify stale alerts.
-- Register a test device and check `server_alert_log`, browser delivery and unsubscribe behavior. No real Firebase project or device has been available to test these external steps here.
+- Register a test device and check `server_alert_log`, `server_reminder_state`, browser delivery and unsubscribe behavior. The Firebase project exists, but verified-owner writes and background device delivery still need an owner account and deployed backend to be tested end to end.
 
 References: [custom owner claims](https://firebase.google.com/docs/auth/admin/custom-claims), [Realtime Database rules](https://firebase.google.com/docs/database/security), [Web push setup](https://firebase.google.com/docs/cloud-messaging/web/get-started), [scheduled functions](https://firebase.google.com/docs/functions/schedule-functions).

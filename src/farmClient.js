@@ -46,6 +46,18 @@ export class FarmClient {
     this.owner = false;
   }
   async write(path, value) {
+    return this.performWrite(() =>
+      this.sdk.set(this.sdk.ref(this.db, path), value),
+    );
+  }
+  async transaction(path, update) {
+    return this.performWrite(() =>
+      this.sdk.runTransaction(this.sdk.ref(this.db, path), update, {
+        applyLocally: false,
+      }),
+    );
+  }
+  async performWrite(operation) {
     if (!this.owner)
       throw new Error("A verified farm owner account is required.");
     if (this.connected === false)
@@ -54,8 +66,8 @@ export class FarmClient {
       );
     let timeout;
     try {
-      await Promise.race([
-        this.sdk.set(this.sdk.ref(this.db, path), value),
+      return await Promise.race([
+        operation(),
         new Promise((_, reject) => {
           timeout = setTimeout(
             () =>
@@ -116,6 +128,10 @@ export class FarmClient {
           {
             body: payload.data?.body || "A pond reading needs attention.",
             icon: "/pond-icon.svg",
+            data: {
+              section: payload.data?.section,
+              pondId: payload.data?.pondId,
+            },
           },
         );
     });

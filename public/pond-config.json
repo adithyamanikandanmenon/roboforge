@@ -1,0 +1,8 @@
+{
+  "pondName": "Pond 01",
+  "location": "Fish farm",
+  "firebase": null,
+  "path": "water_quality/POND_01/readings",
+  "anonymous": false,
+  "staleMinutes": 10
+}

@@ -1,4 +1,38 @@
-# RoboForge · Dual ESP32 Communication Lab
+# RoboForge · Your pond, at a glance
+
+The main website is a simple dashboard for pond owners and everyday visitors. It explains water balance (pH), temperature, oxygen, clarity and surrounding sensor readings. Visitors can explore history, download readings and learn what the measurements mean without seeing device logs or JSON packets.
+
+## Dashboard and Firebase data
+
+Firebase has not been set up for this project yet. The website therefore opens with clearly labeled example data. There are no genuine farm readings or trained predictions in this preview.
+
+When your Firebase Realtime Database is ready, set `public/pond-config.json` with the Firebase **web app** configuration and exact readings path, then rebuild and publish. All visitors will automatically receive live updates through the SDK's `onValue` listener. The Data connection dialog lets the farm owner try configuration in one tab without changing the shared website. Neither the dashboard nor its reader writes to Firebase. Never place service-account private keys or administrative tokens in this file.
+
+Supported data: a collection of reading objects, or one latest-reading object. Use the sensor keys below and `timestamp` as an ISO date/time string or Unix seconds/milliseconds. Missing/non-numeric sensor values remain missing; undated records are excluded. The reader queries the latest 500 records ordered by `timestamp` (keep its type consistent across the collection). Index this field in your database rules.
+
+```json
+{
+  "reading_001": {
+    "ph": 7.2,
+    "temperature": 28.5,
+    "dissolved_oxygen": 6.8,
+    "turbidity": 12,
+    "tds": 320,
+    "air_temperature": 31.2,
+    "aqi": 45,
+    "rainfall": 0,
+    "timestamp": "2026-10-31T10:30:00Z"
+  }
+}
+```
+
+Example path: `water_quality/POND_01/readings`. An existing device-specific path also works when configured explicitly. Visitors need read permission at that exact path. `firebase.public-read.rules.example.json` demonstrates public read access to **only** the chosen pond readings, with all client writes denied. It is an optional reference, not deployed by this website. Merge appropriate rules into your project; keep ingestion restricted to your trusted device/backend. Do not publish private farm data. The older simulator's per-user rules grant access only to its anonymous session, so they will not automatically make that history readable to public visitors.
+
+Dashboard status compares measurements to **example** target ranges. These are not species-specific recommendations, fish-health guarantees or a prediction model. Adjust them in Understand the readings, or configure shared `targets` in the JSON file. Old readings (default 10 minutes, configurable), missing data, offline and permission failures are shown explicitly. Recorded changes are described as observations. Charts use the timestamps and units from the readings; history is limited to the fetched records.
+
+The technical simulator is retained at `?view=simulator` for development and teaching. It is separate from the main visitor experience; its original documentation follows.
+
+## Technical simulator
 
 A functional React + Tailwind application for virtual water-quality sensors → ESP32 transmitter → wireless transport → ESP32 receiver → simulated Wi-Fi → Firebase Realtime Database.
 

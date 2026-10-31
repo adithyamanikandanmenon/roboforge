@@ -1,0 +1,15 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "water_quality": {
+      "POND_01": {
+        "readings": {
+          ".read": true,
+          ".write": false,
+          ".indexOn": ["timestamp"]
+        }
+      }
+    }
+  }
+}

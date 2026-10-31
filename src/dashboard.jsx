@@ -39,6 +39,14 @@ import {
   targetText,
 } from "./pondData.js";
 import { subscribeToPond, validateSettings } from "./firebaseReader.js";
+import {
+  useFarmWorkspace,
+  DailyBrief,
+  FarmTools,
+  ActivityMarkers,
+} from "./farmWorkspace.jsx";
+import { buildAlerts } from "./farmInsights.js";
+import "./farm.css";
 import "./dashboard.css";
 const initialSettings = {
   pondName: "Pond 01",
@@ -120,7 +128,7 @@ function PondArt() {
     </svg>
   );
 }
-function Chart({ rows, metric, targets }) {
+function Chart({ rows, metric, targets, activities = [] }) {
   const points = rows.filter((r) => r[metric.key] !== null);
   if (!points.length)
     return <div className="chart-empty">No readings in this time period.</div>;
@@ -139,7 +147,10 @@ function Chart({ rows, metric, targets }) {
     max = top + pad;
   const y = (value) => 180 - ((value - min) / (max - min)) * 150;
   const first = points[0].time,
-    last = points.at(-1).time;
+    eventRows = activities.filter(
+      (a) => a.time >= first && a.time <= Date.now(),
+    ),
+    last = Math.max(points.at(-1).time, ...eventRows.map((a) => a.time));
   const x = (time) => 45 + ((time - first) / Math.max(last - first, 1)) * 690;
   const line = points
     .map((r, i) => `${i ? "L" : "M"}${x(r.time)},${y(r[metric.key])}`)
@@ -185,7 +196,10 @@ function Chart({ rows, metric, targets }) {
             strokeDasharray="6 6"
           />
         )}
-        <path d={`${line} L${x(last)},185 L45,185Z`} fill="url(#chart-fill)" />
+        <path
+          d={`${line} L${x(points.at(-1).time)},185 L45,185Z`}
+          fill="url(#chart-fill)"
+        />
         <path
           d={line}
           fill="none"
@@ -193,8 +207,24 @@ function Chart({ rows, metric, targets }) {
           strokeWidth="2.5"
           strokeLinejoin="round"
         />
+        {eventRows.map((a) => (
+          <g key={a.id}>
+            <title>
+              {a.type}: {a.note}
+            </title>
+            <line
+              x1={x(a.time)}
+              x2={x(a.time)}
+              y1="30"
+              y2="185"
+              stroke="#c6aa70"
+              strokeDasharray="3 4"
+            />
+            <circle cx={x(a.time)} cy="30" r="4" fill="#c6aa70" />
+          </g>
+        ))}
         <circle
-          cx={x(last)}
+          cx={x(points.at(-1).time)}
           cy={y(vals.at(-1))}
           r="4"
           fill="#39876e"
@@ -221,7 +251,13 @@ function Dashboard() {
     [mode, setMode] = useState("demo"),
     [connection, setConnection] = useState("demo"),
     [error, setError] = useState(""),
-    [section, setSection] = useState("overview"),
+    [section, setSection] = useState(
+      ["alerts", "activity", "owner", "history", "guide"].includes(
+        new URLSearchParams(location.search).get("section"),
+      )
+        ? new URLSearchParams(location.search).get("section")
+        : "overview",
+    ),
     [selected, setSelected] = useState("dissolved_oxygen"),
     [period, setPeriod] = useState(24),
     [now, setNow] = useState(Date.now()),
@@ -231,6 +267,19 @@ function Dashboard() {
     [formError, setFormError] = useState(""),
     [targets, setTargets] = useState(defaultTargets),
     [retry, setRetry] = useState(0);
+  const farm = useFarmWorkspace(settings, mode);
+  useEffect(() => {
+    const profile = farm.profile;
+    setSettings((previous) => ({
+      ...previous,
+      pondName: profile.name,
+      location: profile.location,
+      path: profile.path,
+      staleMinutes: profile.staleMinutes,
+    }));
+    setTargets(profile.targets);
+    setRows(mode === "demo" ? makeDemo() : []);
+  }, [farm.profile]);
   const mounted = useRef(true);
   useEffect(() => {
     if (!modal) return;
@@ -269,7 +318,18 @@ function Dashboard() {
       .then((r) => r.json())
       .then((config) => {
         if (!mounted.current) return;
-        setSettings({ ...initialSettings, ...config });
+        setSettings((previous) => ({
+          ...initialSettings,
+          ...config,
+          ...(!config.firebase
+            ? {
+                pondName: previous.pondName,
+                location: previous.location,
+                path: previous.path,
+                staleMinutes: previous.staleMinutes,
+              }
+            : {}),
+        }));
         if (config.targets)
           setTargets({ ...defaultTargets, ...config.targets });
         if (config.firebase) {
@@ -442,6 +502,9 @@ function Dashboard() {
             ["overview", "Pond overview", LayoutDashboard],
             ["history", "Water history", History],
             ["guide", "Understand the readings", BookOpen],
+            ["alerts", "Pond alerts", AlertCircle],
+            ["activity", "Activity diary", History],
+            ["owner", "Owner tools", Settings],
           ].map(([key, title, Icon]) => (
             <button
               className={section === key ? "active" : ""}
@@ -451,6 +514,17 @@ function Dashboard() {
             >
               <Icon size={18} />
               <span>{title}</span>
+              {key === "alerts" && (
+                <b className="nav-alert-count">
+                  {
+                    buildAlerts(rows, targets, {
+                      now,
+                      staleMinutes: settings.staleMinutes,
+                      connected: mode === "demo" || connection === "connected",
+                    }).filter((a) => a.active).length
+                  }
+                </b>
+              )}
               {section === key && <i />}
             </button>
           ))}
@@ -493,8 +567,18 @@ function Dashboard() {
           <div>
             <span>YOUR FARM</span>
             <span className="top-separator">/</span>
-            <strong>{settings.pondName}</strong>
-            <ChevronDown size={13} />
+            <select
+              className="header-pond-select"
+              aria-label="Choose pond"
+              value={farm.selectedId}
+              onChange={(e) => farm.setSelectedId(e.target.value)}
+            >
+              {farm.profiles.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <span
@@ -529,14 +613,26 @@ function Dashboard() {
                   ? "Your water, over time."
                   : section === "guide"
                     ? "Good information. Simply explained."
-                    : "Your pond, at a glance."}
+                    : section === "alerts"
+                      ? "Know what needs attention."
+                      : section === "activity"
+                        ? "The story around your pond."
+                        : section === "owner"
+                          ? "Your farm, your settings."
+                          : "Your pond, at a glance."}
               </h1>
               <p>
                 {section === "history"
                   ? "See how conditions have changed and explore earlier readings."
                   : section === "guide"
                     ? "You don’t need to be an expert to understand your water."
-                    : "The numbers that matter, explained in a way that makes sense."}
+                    : section === "alerts"
+                      ? "Clear alerts, useful context and recorded resolution."
+                      : section === "activity"
+                        ? "Keep track of feeding, water changes and everyday care."
+                        : section === "owner"
+                          ? "Manage pond profiles, access and notifications."
+                          : "The numbers that matter, explained in a way that makes sense."}
               </p>
             </div>
             <button className="quiet-button" onClick={openSettings}>
@@ -556,6 +652,39 @@ function Dashboard() {
               </button>
             </div>
           )}
+          {farm.notice && (
+            <div className="farm-notice" role="status">
+              <Info size={16} />
+              <span>{farm.notice}</span>
+              <button
+                aria-label="Dismiss owner message"
+                onClick={() => farm.setNotice("")}
+              >
+                <X size={15} />
+              </button>
+            </div>
+          )}
+          {farm.demoOwner && (
+            <div className="owner-demo-banner">
+              Owner demo enabled · Edits are stored only in this browser.
+              <button onClick={() => farm.setDemoOwner(false)}>
+                Leave demo
+              </button>
+            </div>
+          )}
+          {["alerts", "activity", "owner"].includes(section) && (
+            <FarmTools
+              farm={farm}
+              section={section}
+              rows={rows}
+              targets={targets}
+              now={now}
+              mode={mode}
+              connection={connection}
+              settings={settings}
+              onConnect={openSettings}
+            />
+          )}
           {mode === "live" && (error || connection === "offline") && (
             <div className="connection-banner" role="alert">
               <AlertCircle size={18} />
@@ -571,6 +700,14 @@ function Dashboard() {
           )}
           {section === "overview" && (
             <>
+              <DailyBrief
+                rows={rows}
+                targets={targets}
+                now={now}
+                farm={farm}
+                mode={mode}
+                onNavigate={navigate}
+              />
               <section
                 className={`pond-hero ${displayState === "good" ? "" : "hero-caution"}`}
               >
@@ -603,7 +740,16 @@ function Dashboard() {
                   </div>
                 </div>
                 <div className="pond-art">
-                  <PondArt />
+                  {farm.profile.photoUrl ? (
+                    <img
+                      className="hero-pond-photo"
+                      src={farm.profile.photoUrl}
+                      alt={farm.profile.name}
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <PondArt />
+                  )}
                   <span>
                     <Waves size={13} />
                     {settings.pondName} · Water overview
@@ -714,6 +860,11 @@ function Dashboard() {
                     rows={filtered}
                     metric={currentMetric}
                     targets={targets}
+                    activities={farm.activities}
+                  />
+                  <ActivityMarkers
+                    activities={farm.activities}
+                    rows={filtered}
                   />
                   <div className="chart-caption">
                     <span />
@@ -898,7 +1049,13 @@ function Dashboard() {
                   </button>
                 ))}
               </div>
-              <Chart rows={filtered} metric={currentMetric} targets={targets} />
+              <Chart
+                rows={filtered}
+                metric={currentMetric}
+                targets={targets}
+                activities={farm.activities}
+              />
+              <ActivityMarkers activities={farm.activities} rows={filtered} />
               <div className="readings-table">
                 <table>
                   <thead>
@@ -983,8 +1140,8 @@ function Dashboard() {
                 <p>
                   The starting ranges are examples, not recommendations for a
                   particular fish species. Ask your farm expert for suitable
-                  targets, then set them here. Changes apply to this browser
-                  session.
+                  targets, then save them in Owner tools. These are the
+                  currently selected targets.
                 </p>
                 <div className="target-grid">
                   {metrics.slice(0, 5).map((metric) => (
@@ -998,6 +1155,7 @@ function Dashboard() {
                           <input
                             aria-label={`${metric.name} ${bound}`}
                             type="number"
+                            disabled
                             step="0.1"
                             value={targets[metric.key]?.[bound] ?? ""}
                             placeholder="No limit"
@@ -1033,9 +1191,9 @@ function Dashboard() {
                 )}
                 <button
                   className="quiet-button"
-                  onClick={() => setTargets(defaultTargets)}
+                  onClick={() => navigate("owner")}
                 >
-                  Reset example targets
+                  Manage targets in Owner tools
                 </button>
               </section>
             </>
@@ -1081,8 +1239,8 @@ function Dashboard() {
             </div>
             <p className="modal-explainer">
               Once connected, visitors see the readings as simple cards and
-              charts. This dashboard only reads data; it never changes your
-              Firebase records.
+              charts. Public viewing only reads sensor data. Verified owners can
+              save pond profiles and diary entries.
             </p>
             <form onSubmit={applyConnection}>
               <div className="connection-two-fields">

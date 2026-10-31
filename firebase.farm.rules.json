@@ -1,0 +1,129 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "water_quality": {
+      "$pond": {
+        "readings": {
+          ".read": true,
+          ".indexOn": ["timestamp"],
+          "$reading": {
+            ".write": "auth != null && (auth.token.sensor_writer === true || auth.token.farm_owner === true) && !data.exists() && newData.exists()",
+            ".validate": "newData.hasChildren(['timestamp'])",
+            "timestamp": {
+              ".validate": "newData.isNumber() || newData.isString()"
+            }
+          }
+        }
+      }
+    },
+    "pond_profiles": {
+      ".read": true,
+      "$pond": {
+        ".write": "auth != null && auth.token.farm_owner === true && newData.exists()",
+        ".validate": "newData.hasChildren(['id','name','path','targets','staleMinutes']) && newData.child('id').val() === $pond",
+        "id": {
+          ".validate": "newData.isString() && newData.val().length <= 60"
+        },
+        "name": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 80"
+        },
+        "path": {
+          ".validate": "newData.isString() && newData.val().length <= 240"
+        },
+        "fishSpecies": {
+          ".validate": "newData.isString() && newData.val().length <= 80"
+        },
+        "location": {
+          ".validate": "newData.isString() && newData.val().length <= 120"
+        },
+        "photoUrl": {
+          ".validate": "newData.isString() && newData.val().length <= 2000"
+        },
+        "notes": {
+          ".validate": "newData.isString() && newData.val().length <= 1000"
+        },
+        "staleMinutes": {
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 1440"
+        },
+        "targets": {
+          ".validate": "newData.hasChildren(['ph','temperature','dissolved_oxygen','turbidity','tds'])",
+          "$metric": {
+            ".validate": "newData.hasChild('min') || newData.hasChild('max')",
+            "min": {
+              ".validate": "newData.isNumber() && (!newData.parent().hasChild('max') || newData.val() <= newData.parent().child('max').val())"
+            },
+            "max": {
+              ".validate": "newData.isNumber() && (!newData.parent().hasChild('min') || newData.val() >= newData.parent().child('min').val())"
+            },
+            "$other": { ".validate": false }
+          }
+        },
+        "$other": { ".validate": false }
+      }
+    },
+    "farm_activity": {
+      "$pond": {
+        ".read": "auth != null && auth.token.farm_owner === true",
+        "$entry": {
+          ".write": "auth != null && auth.token.farm_owner === true && !data.exists() && newData.exists()",
+          ".validate": "newData.hasChildren(['id','type','note','time','createdAt']) && newData.child('id').val() === $entry",
+          "id": { ".validate": "newData.isString()" },
+          "type": {
+            ".validate": "newData.isString() && newData.val().length <= 40"
+          },
+          "note": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 1000"
+          },
+          "time": {
+            ".validate": "newData.isNumber() && newData.val() <= now + 60000"
+          },
+          "createdAt": {
+            ".validate": "newData.isNumber() && newData.val() <= now + 60000"
+          },
+          "$other": { ".validate": false }
+        }
+      }
+    },
+    "alert_ack": {
+      "$pond": {
+        ".read": "auth != null && auth.token.farm_owner === true",
+        "$alert": {
+          ".write": "auth != null && auth.token.farm_owner === true && newData.exists()",
+          ".validate": "newData.hasChildren(['time','note'])",
+          "time": {
+            ".validate": "newData.isNumber() && newData.val() <= now + 60000"
+          },
+          "note": {
+            ".validate": "newData.isString() && newData.val().length <= 1000"
+          },
+          "$other": { ".validate": false }
+        }
+      }
+    },
+    "notification_tokens": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid && auth.token.farm_owner === true",
+        "$token": {
+          ".write": "auth != null && auth.uid === $uid && auth.token.farm_owner === true",
+          ".validate": "newData.hasChildren(['token','pondId','updatedAt'])",
+          "token": {
+            ".validate": "newData.isString() && newData.val().length <= 4096"
+          },
+          "pondId": {
+            ".validate": "newData.isString() && root.child('pond_profiles').child(newData.val()).exists()"
+          },
+          "updatedAt": {
+            ".validate": "newData.isNumber() && newData.val() <= now + 60000"
+          },
+          "$other": { ".validate": false }
+        }
+      }
+    },
+    "server_alert_state": { ".read": false, ".write": false },
+    "server_alert_log": {
+      ".read": "auth != null && auth.token.farm_owner === true",
+      ".write": false
+    }
+  }
+}

@@ -4,5 +4,6 @@
   "firebase": null,
   "path": "water_quality/POND_01/readings",
   "anonymous": false,
-  "staleMinutes": 10
+  "staleMinutes": 10,
+  "vapidKey": ""
 }

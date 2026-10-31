@@ -1,0 +1,10 @@
+{
+  "database": { "rules": "firebase.farm.rules.json" },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "pond-alerts",
+      "ignore": ["node_modules", ".git", "*.log"]
+    }
+  ]
+}

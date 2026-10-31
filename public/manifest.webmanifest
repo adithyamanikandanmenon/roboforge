@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "RoboForge Pond Care",
+  "short_name": "Pond Care",
+  "description": "Understand your pond’s water and record everyday care.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f8f4",
+  "theme_color": "#648a55",
+  "icons": [
+    {
+      "src": "/pond-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

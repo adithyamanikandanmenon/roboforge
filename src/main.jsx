@@ -213,7 +213,7 @@ function App() {
         "Firebase connected. Future receiver packets will write to your project.",
       );
     } catch (e) {
-      setMode("demo");
+      setMode(firebase.mode);
       setStatus(`Firebase connection failed: ${e.message}`);
       monitor.emit("cloud", "status", e.message);
     } finally {

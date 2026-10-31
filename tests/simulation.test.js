@@ -5,8 +5,12 @@ import { Transmitter } from "../src/transmitter.js";
 import { Receiver } from "../src/receiver.js";
 import { WirelessTransport } from "../src/wirelessTransport.js";
 import { FirebaseService } from "../src/firebaseService.js";
-import { defaults, validate } from "../src/sensorSimulator.js";
+import { defaults, validate, sample } from "../src/sensorSimulator.js";
 const wait = () => new Promise((resolve) => setTimeout(resolve, 35));
+test("empty sensor input cannot become a valid zero reading", () => {
+  assert.ok(Number.isNaN(sample({...defaults(), ph: ""}, false).ph));
+  assert.ok(Number.isNaN(sample({...defaults(), ph: ""}, true).ph));
+});
 function setup() {
   const config = {
     interval: 1000,

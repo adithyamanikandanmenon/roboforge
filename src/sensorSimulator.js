@@ -14,7 +14,9 @@ export function sample(values, automatic, random = Math.random) {
   return Object.fromEntries(
     sensors.map(([key, , , min, max, step]) => [
       key,
-      automatic
+      values[key] === "" || !Number.isFinite(Number(values[key]))
+        ? NaN
+        : automatic
         ? Number(
             Math.max(
               min,
